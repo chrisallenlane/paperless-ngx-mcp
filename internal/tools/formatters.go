@@ -10,6 +10,8 @@ import (
 
 const bytesPerTB = 1024 * 1024 * 1024 * 1024
 
+const paginationHint = "\n(more results available — use page parameter)"
+
 var matchingAlgorithmNames = map[int]string{
 	0: "None",
 	1: "Any word",
@@ -166,26 +168,48 @@ func matchDisplayOrDefault(match string) string {
 	return match
 }
 
+func formatMatchableFields(
+	label string,
+	id int,
+	name, slug, match string,
+	algo int,
+	isInsensitive bool,
+	docCount int,
+) string {
+	algoName := matchingAlgorithmName(algo)
+	matchDisplay := matchDisplayOrDefault(match)
+
+	out := fmt.Sprintf("%s (ID: %d)\n", label, id)
+	out += fmt.Sprintf("  Name: %s\n", name)
+	out += fmt.Sprintf("  Slug: %s\n", slug)
+	out += fmt.Sprintf("  Match: %s\n", matchDisplay)
+	out += fmt.Sprintf(
+		"  Matching Algorithm: %d (%s)\n",
+		algo,
+		algoName,
+	)
+	out += fmt.Sprintf("  Case Insensitive: %v\n", isInsensitive)
+	out += fmt.Sprintf("  Document Count: %d\n", docCount)
+
+	return out
+}
+
 func formatCorrespondent(c *models.Correspondent) string {
-	algoName := matchingAlgorithmName(c.MatchingAlgorithm)
-	matchDisplay := matchDisplayOrDefault(c.Match)
+	out := formatMatchableFields(
+		"Correspondent",
+		c.ID,
+		c.Name,
+		c.Slug,
+		c.Match,
+		c.MatchingAlgorithm,
+		c.IsInsensitive,
+		c.DocumentCount,
+	)
 
 	lastCorr := "(none)"
 	if c.LastCorrespondence != nil {
 		lastCorr = formatDate(*c.LastCorrespondence)
 	}
-
-	out := fmt.Sprintf("Correspondent (ID: %d)\n", c.ID)
-	out += fmt.Sprintf("  Name: %s\n", c.Name)
-	out += fmt.Sprintf("  Slug: %s\n", c.Slug)
-	out += fmt.Sprintf("  Match: %s\n", matchDisplay)
-	out += fmt.Sprintf(
-		"  Matching Algorithm: %d (%s)\n",
-		c.MatchingAlgorithm,
-		algoName,
-	)
-	out += fmt.Sprintf("  Case Insensitive: %v\n", c.IsInsensitive)
-	out += fmt.Sprintf("  Document Count: %d\n", c.DocumentCount)
 	out += fmt.Sprintf("  Last Correspondence: %s\n", lastCorr)
 
 	return out
@@ -210,7 +234,7 @@ func formatCorrespondentList(
 	}
 
 	if list.Next != nil {
-		out += "\n(more results available — use page parameter)"
+		out += paginationHint
 	}
 
 	return out
@@ -251,29 +275,23 @@ func formatCustomFieldList(
 	}
 
 	if list.Next != nil {
-		out += "\n(more results available — use page parameter)"
+		out += paginationHint
 	}
 
 	return out
 }
 
 func formatDocumentType(dt *models.DocumentType) string {
-	algoName := matchingAlgorithmName(dt.MatchingAlgorithm)
-	matchDisplay := matchDisplayOrDefault(dt.Match)
-
-	out := fmt.Sprintf("Document Type (ID: %d)\n", dt.ID)
-	out += fmt.Sprintf("  Name: %s\n", dt.Name)
-	out += fmt.Sprintf("  Slug: %s\n", dt.Slug)
-	out += fmt.Sprintf("  Match: %s\n", matchDisplay)
-	out += fmt.Sprintf(
-		"  Matching Algorithm: %d (%s)\n",
+	return formatMatchableFields(
+		"Document Type",
+		dt.ID,
+		dt.Name,
+		dt.Slug,
+		dt.Match,
 		dt.MatchingAlgorithm,
-		algoName,
+		dt.IsInsensitive,
+		dt.DocumentCount,
 	)
-	out += fmt.Sprintf("  Case Insensitive: %v\n", dt.IsInsensitive)
-	out += fmt.Sprintf("  Document Count: %d\n", dt.DocumentCount)
-
-	return out
 }
 
 func formatDocumentTypeList(
@@ -298,7 +316,7 @@ func formatDocumentTypeList(
 	}
 
 	if list.Next != nil {
-		out += "\n(more results available — use page parameter)"
+		out += paginationHint
 	}
 
 	return out
@@ -395,7 +413,7 @@ func formatDocumentList(
 	}
 
 	if list.Next != nil {
-		out += "\n(more results available — use page parameter)"
+		out += paginationHint
 	}
 
 	return out
