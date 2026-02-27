@@ -112,6 +112,12 @@ func (s *Server) registerTools() {
 	s.tools["get_next_asn"] = tools.NewGetNextASN(
 		s.client,
 	)
+	s.tools["upload_document"] = tools.NewUploadDocument(
+		s.client,
+	)
+	s.tools["download_document"] = tools.NewDownloadDocument(
+		s.client,
+	)
 }
 
 // Run starts the MCP server and processes requests
