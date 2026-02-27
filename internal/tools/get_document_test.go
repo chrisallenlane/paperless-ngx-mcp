@@ -169,23 +169,3 @@ func TestGetDocument_Execute_NullableFields(t *testing.T) {
 		}
 	}
 }
-
-func TestGetDocument_Execute_MissingID(t *testing.T) {
-	c := client.New("http://localhost", "test-token")
-	tool := NewGetDocument(c)
-
-	_, err := tool.Execute(
-		context.Background(),
-		json.RawMessage(`{}`),
-	)
-	if err == nil {
-		t.Fatal("Expected error for missing id")
-	}
-
-	if !strings.Contains(err.Error(), "positive integer") {
-		t.Errorf(
-			"Error should mention positive integer, got: %s",
-			err.Error(),
-		)
-	}
-}

@@ -206,6 +206,44 @@ var allToolTests = []toolTestEntry{
 		required:   []string{"id"},
 	},
 
+	// Delete tools
+	{
+		name: "DeleteCorrespondent",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteCorrespondent(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "DeleteCustomField",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteCustomField(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "DeleteDocumentType",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteDocumentType(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "DeleteDocument",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteDocument(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+
 	// Special tools (Description + InputSchema only)
 	{
 		name: "UploadDocument",

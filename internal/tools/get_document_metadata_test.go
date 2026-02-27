@@ -140,16 +140,3 @@ func TestGetDocumentMetadata_Execute_NoArchive(t *testing.T) {
 		)
 	}
 }
-
-func TestGetDocumentMetadata_Execute_MissingID(t *testing.T) {
-	c := client.New("http://localhost", "test-token")
-	tool := NewGetDocumentMetadata(c)
-
-	_, err := tool.Execute(
-		context.Background(),
-		json.RawMessage(`{}`),
-	)
-	if err == nil {
-		t.Fatal("Expected error for missing id")
-	}
-}

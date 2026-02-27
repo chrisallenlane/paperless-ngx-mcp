@@ -135,16 +135,3 @@ func TestGetDocumentSuggestions_Execute_Empty(t *testing.T) {
 		}
 	}
 }
-
-func TestGetDocumentSuggestions_Execute_MissingID(t *testing.T) {
-	c := client.New("http://localhost", "test-token")
-	tool := NewGetDocumentSuggestions(c)
-
-	_, err := tool.Execute(
-		context.Background(),
-		json.RawMessage(`{}`),
-	)
-	if err == nil {
-		t.Fatal("Expected error for missing id")
-	}
-}
