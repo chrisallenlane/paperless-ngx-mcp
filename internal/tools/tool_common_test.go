@@ -1188,7 +1188,7 @@ var getToolTests = []struct {
 		args:         `{"id": 1}`,
 		responseJSON: documentMetadataResponse,
 		checks: []string{
-			"Document Metadata (ID: 1)",
+			"Document Metadata",
 			"Filename: invoice-2024.pdf",
 			"MIME Type: application/pdf",
 			"Checksum: abc123def456",
@@ -1206,7 +1206,7 @@ var getToolTests = []struct {
 		args:         `{"id": 1}`,
 		responseJSON: documentSuggestionsResponse,
 		checks: []string{
-			"Document Suggestions (ID: 1)",
+			"Document Suggestions",
 			"Correspondents: 1, 3",
 			"Document Types: 2",
 			"Storage Paths: 1",

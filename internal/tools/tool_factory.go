@@ -51,7 +51,7 @@ type getTool[T any] struct {
 	desc    string
 	schema  map[string]interface{}
 	pathFmt string
-	format  func(int, *T) string
+	format  func(*T) string
 }
 
 func (t *getTool[T]) Description() string {
@@ -66,7 +66,7 @@ func (t *getTool[T]) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	result, id, err := fetchByID[T](
+	result, _, err := fetchByID[T](
 		ctx,
 		t.client,
 		args,
@@ -76,7 +76,7 @@ func (t *getTool[T]) Execute(
 		return "", err
 	}
 
-	return t.format(id, result), nil
+	return t.format(result), nil
 }
 
 // listTool is a data-driven paginated list tool.

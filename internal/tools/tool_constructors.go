@@ -45,9 +45,7 @@ func NewGetCorrespondent(c *client.Client) Tool {
 		desc:    "Get a correspondent by ID from Paperless-NGX",
 		schema:  idOnlySchema("Correspondent ID"),
 		pathFmt: "/api/correspondents/%d/",
-		format: func(_ int, v *models.Correspondent) string {
-			return formatCorrespondent(v)
-		},
+		format:  formatCorrespondent,
 	}
 }
 
@@ -58,9 +56,7 @@ func NewGetCustomField(c *client.Client) Tool {
 		desc:    "Get a custom field by ID from Paperless-NGX",
 		schema:  idOnlySchema("Custom field ID"),
 		pathFmt: "/api/custom_fields/%d/",
-		format: func(_ int, v *models.CustomField) string {
-			return formatCustomField(v)
-		},
+		format:  formatCustomField,
 	}
 }
 
@@ -71,9 +67,7 @@ func NewGetDocumentType(c *client.Client) Tool {
 		desc:    "Get a document type by ID from Paperless-NGX",
 		schema:  idOnlySchema("Document type ID"),
 		pathFmt: "/api/document_types/%d/",
-		format: func(_ int, v *models.DocumentType) string {
-			return formatDocumentType(v)
-		},
+		format:  formatDocumentType,
 	}
 }
 
@@ -84,9 +78,7 @@ func NewGetDocument(c *client.Client) Tool {
 		desc:    "Get a document by ID from Paperless-NGX",
 		schema:  idOnlySchema("Document ID"),
 		pathFmt: "/api/documents/%d/",
-		format: func(_ int, v *models.Document) string {
-			return formatDocument(v)
-		},
+		format:  formatDocument,
 	}
 }
 
@@ -159,9 +151,7 @@ func NewGetTask(c *client.Client) Tool {
 		desc:    "Get a background task by ID from Paperless-NGX",
 		schema:  idOnlySchema("Task ID"),
 		pathFmt: "/api/tasks/%d/",
-		format: func(_ int, v *models.Task) string {
-			return formatTask(v)
-		},
+		format:  formatTask,
 	}
 }
 
@@ -184,9 +174,7 @@ func NewGetTag(c *client.Client) Tool {
 		desc:    "Get a tag by ID from Paperless-NGX",
 		schema:  idOnlySchema("Tag ID"),
 		pathFmt: "/api/tags/%d/",
-		format: func(_ int, v *models.Tag) string {
-			return formatTag(v)
-		},
+		format:  formatTag,
 	}
 }
 
@@ -232,12 +220,7 @@ func NewGetStoragePath(c *client.Client) Tool {
 			"from Paperless-NGX",
 		schema:  idOnlySchema("Storage path ID"),
 		pathFmt: "/api/storage_paths/%d/",
-		format: func(
-			_ int,
-			v *models.StoragePath,
-		) string {
-			return formatStoragePath(v)
-		},
+		format:  formatStoragePath,
 	}
 }
 
@@ -287,12 +270,7 @@ func NewGetSavedView(c *client.Client) Tool {
 			"from Paperless-NGX",
 		schema:  idOnlySchema("Saved view ID"),
 		pathFmt: "/api/saved_views/%d/",
-		format: func(
-			_ int,
-			v *models.SavedView,
-		) string {
-			return formatSavedView(v)
-		},
+		format:  formatSavedView,
 	}
 }
 

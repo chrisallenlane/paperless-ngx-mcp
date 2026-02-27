@@ -622,10 +622,9 @@ func formatOptDate(v *string) string {
 }
 
 func formatDocumentMetadata(
-	id int,
 	m *models.DocumentMetadata,
 ) string {
-	out := fmt.Sprintf("Document Metadata (ID: %d)\n", id)
+	out := "Document Metadata\n"
 
 	out += "\nOriginal File:\n"
 	out += fmt.Sprintf("  Filename: %s\n", m.OriginalFilename)
@@ -700,10 +699,9 @@ func formatFileSize(bytes int64) string {
 }
 
 func formatDocumentSuggestions(
-	id int,
 	s *models.DocumentSuggestions,
 ) string {
-	out := fmt.Sprintf("Document Suggestions (ID: %d)\n", id)
+	out := "Document Suggestions\n"
 
 	out += fmt.Sprintf(
 		"  Correspondents: %s\n",
