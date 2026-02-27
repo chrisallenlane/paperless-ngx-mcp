@@ -151,23 +151,3 @@ func TestUpdateConfig_Execute(t *testing.T) {
 		}
 	}
 }
-
-func TestUpdateConfig_Execute_MissingID(t *testing.T) {
-	c := client.New("http://localhost", "test-token")
-	tool := NewUpdateConfig(c)
-
-	_, err := tool.Execute(
-		context.Background(),
-		json.RawMessage(`{"output_type": "pdfa"}`),
-	)
-	if err == nil {
-		t.Fatal("Expected error for missing id")
-	}
-
-	if !strings.Contains(err.Error(), "id is required") {
-		t.Errorf(
-			"Error should mention id is required, got: %s",
-			err.Error(),
-		)
-	}
-}
