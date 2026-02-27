@@ -37,14 +37,12 @@ func (t *GetDocumentMetadata) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, err := parseIDArg(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/documents/%d/metadata/", id)
-
-	body, err := doAPIRequest(ctx, t.client, path)
+	meta, id, err := fetchByID[models.DocumentMetadata](
+		ctx,
+		t.client,
+		args,
+		"/api/documents/%d/metadata/",
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to get document metadata: %w",
@@ -52,13 +50,5 @@ func (t *GetDocumentMetadata) Execute(
 		)
 	}
 
-	var meta models.DocumentMetadata
-	if err := json.Unmarshal(body, &meta); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse metadata response: %w",
-			err,
-		)
-	}
-
-	return formatDocumentMetadata(id, &meta), nil
+	return formatDocumentMetadata(id, meta), nil
 }

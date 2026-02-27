@@ -34,14 +34,12 @@ func (t *GetDocumentType) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, err := parseIDArg(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/document_types/%d/", id)
-
-	body, err := doAPIRequest(ctx, t.client, path)
+	dt, _, err := fetchByID[models.DocumentType](
+		ctx,
+		t.client,
+		args,
+		"/api/document_types/%d/",
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to get document type: %w",
@@ -49,13 +47,5 @@ func (t *GetDocumentType) Execute(
 		)
 	}
 
-	var dt models.DocumentType
-	if err := json.Unmarshal(body, &dt); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse document type response: %w",
-			err,
-		)
-	}
-
-	return formatDocumentType(&dt), nil
+	return formatDocumentType(dt), nil
 }

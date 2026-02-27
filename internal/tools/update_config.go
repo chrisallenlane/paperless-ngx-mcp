@@ -154,30 +154,18 @@ func (t *UpdateConfig) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, patchBody, err := parsePatchArgs(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/config/%d/", id)
-
-	body, err := doPatchRequest(
+	config, err := patchByID[models.ApplicationConfiguration](
 		ctx,
 		t.client,
-		path,
-		patchBody,
+		args,
+		"/api/config/%d/",
 	)
 	if err != nil {
-		return "", fmt.Errorf("failed to update config: %w", err)
-	}
-
-	var config models.ApplicationConfiguration
-	if err := json.Unmarshal(body, &config); err != nil {
 		return "", fmt.Errorf(
-			"failed to parse config response: %w",
+			"failed to update config: %w",
 			err,
 		)
 	}
 
-	return formatConfig(&config), nil
+	return formatConfig(config), nil
 }

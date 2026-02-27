@@ -36,20 +36,11 @@ func (t *CreateCorrespondent) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	var params matchableCreateParams
-	if err := json.Unmarshal(args, &params); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
-	}
-
-	if params.Name == "" {
-		return "", fmt.Errorf("name is required")
-	}
-
-	body, err := doPostRequest(
+	corr, err := createMatchable[models.Correspondent](
 		ctx,
 		t.client,
+		args,
 		"/api/correspondents/",
-		params,
 	)
 	if err != nil {
 		return "", fmt.Errorf(
@@ -58,13 +49,5 @@ func (t *CreateCorrespondent) Execute(
 		)
 	}
 
-	var corr models.Correspondent
-	if err := json.Unmarshal(body, &corr); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse correspondent response: %w",
-			err,
-		)
-	}
-
-	return formatCorrespondent(&corr), nil
+	return formatCorrespondent(corr), nil
 }

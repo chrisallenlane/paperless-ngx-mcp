@@ -36,14 +36,12 @@ func (t *UpdateDocumentType) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, patchBody, err := parsePatchArgs(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/document_types/%d/", id)
-
-	body, err := doPatchRequest(ctx, t.client, path, patchBody)
+	dt, err := patchByID[models.DocumentType](
+		ctx,
+		t.client,
+		args,
+		"/api/document_types/%d/",
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to update document type: %w",
@@ -51,13 +49,5 @@ func (t *UpdateDocumentType) Execute(
 		)
 	}
 
-	var dt models.DocumentType
-	if err := json.Unmarshal(body, &dt); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse document type response: %w",
-			err,
-		)
-	}
-
-	return formatDocumentType(&dt), nil
+	return formatDocumentType(dt), nil
 }

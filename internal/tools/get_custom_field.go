@@ -34,14 +34,12 @@ func (t *GetCustomField) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, err := parseIDArg(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/custom_fields/%d/", id)
-
-	body, err := doAPIRequest(ctx, t.client, path)
+	field, _, err := fetchByID[models.CustomField](
+		ctx,
+		t.client,
+		args,
+		"/api/custom_fields/%d/",
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to get custom field: %w",
@@ -49,13 +47,5 @@ func (t *GetCustomField) Execute(
 		)
 	}
 
-	var field models.CustomField
-	if err := json.Unmarshal(body, &field); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse custom field response: %w",
-			err,
-		)
-	}
-
-	return formatCustomField(&field), nil
+	return formatCustomField(field), nil
 }

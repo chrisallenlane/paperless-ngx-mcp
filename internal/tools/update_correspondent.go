@@ -36,14 +36,12 @@ func (t *UpdateCorrespondent) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, patchBody, err := parsePatchArgs(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/correspondents/%d/", id)
-
-	body, err := doPatchRequest(ctx, t.client, path, patchBody)
+	corr, err := patchByID[models.Correspondent](
+		ctx,
+		t.client,
+		args,
+		"/api/correspondents/%d/",
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to update correspondent: %w",
@@ -51,13 +49,5 @@ func (t *UpdateCorrespondent) Execute(
 		)
 	}
 
-	var corr models.Correspondent
-	if err := json.Unmarshal(body, &corr); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse correspondent response: %w",
-			err,
-		)
-	}
-
-	return formatCorrespondent(&corr), nil
+	return formatCorrespondent(corr), nil
 }

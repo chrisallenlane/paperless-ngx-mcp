@@ -36,20 +36,11 @@ func (t *CreateDocumentType) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	var params matchableCreateParams
-	if err := json.Unmarshal(args, &params); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
-	}
-
-	if params.Name == "" {
-		return "", fmt.Errorf("name is required")
-	}
-
-	body, err := doPostRequest(
+	dt, err := createMatchable[models.DocumentType](
 		ctx,
 		t.client,
+		args,
 		"/api/document_types/",
-		params,
 	)
 	if err != nil {
 		return "", fmt.Errorf(
@@ -58,13 +49,5 @@ func (t *CreateDocumentType) Execute(
 		)
 	}
 
-	var dt models.DocumentType
-	if err := json.Unmarshal(body, &dt); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse document type response: %w",
-			err,
-		)
-	}
-
-	return formatDocumentType(&dt), nil
+	return formatDocumentType(dt), nil
 }

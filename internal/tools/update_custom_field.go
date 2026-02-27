@@ -34,14 +34,12 @@ func (t *UpdateCustomField) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, patchBody, err := parsePatchArgs(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/custom_fields/%d/", id)
-
-	body, err := doPatchRequest(ctx, t.client, path, patchBody)
+	field, err := patchByID[models.CustomField](
+		ctx,
+		t.client,
+		args,
+		"/api/custom_fields/%d/",
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to update custom field: %w",
@@ -49,13 +47,5 @@ func (t *UpdateCustomField) Execute(
 		)
 	}
 
-	var field models.CustomField
-	if err := json.Unmarshal(body, &field); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse custom field response: %w",
-			err,
-		)
-	}
-
-	return formatCustomField(&field), nil
+	return formatCustomField(field), nil
 }

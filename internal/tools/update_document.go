@@ -101,14 +101,12 @@ func (t *UpdateDocument) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, patchBody, err := parsePatchArgs(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/documents/%d/", id)
-
-	body, err := doPatchRequest(ctx, t.client, path, patchBody)
+	doc, err := patchByID[models.Document](
+		ctx,
+		t.client,
+		args,
+		"/api/documents/%d/",
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to update document: %w",
@@ -116,13 +114,5 @@ func (t *UpdateDocument) Execute(
 		)
 	}
 
-	var doc models.Document
-	if err := json.Unmarshal(body, &doc); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse document response: %w",
-			err,
-		)
-	}
-
-	return formatDocument(&doc), nil
+	return formatDocument(doc), nil
 }

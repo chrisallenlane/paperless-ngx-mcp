@@ -35,12 +35,12 @@ func (t *ListCorrespondents) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	path, err := buildListPath("/api/correspondents/", args)
-	if err != nil {
-		return "", err
-	}
-
-	body, err := doAPIRequest(ctx, t.client, path)
+	list, err := listResources[models.Correspondent](
+		ctx,
+		t.client,
+		"/api/correspondents/",
+		args,
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to list correspondents: %w",
@@ -48,13 +48,5 @@ func (t *ListCorrespondents) Execute(
 		)
 	}
 
-	var list models.PaginatedList[models.Correspondent]
-	if err := json.Unmarshal(body, &list); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse correspondents response: %w",
-			err,
-		)
-	}
-
-	return formatCorrespondentList(&list), nil
+	return formatCorrespondentList(list), nil
 }

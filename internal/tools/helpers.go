@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
+	"github.com/chrisallenlane/paperless-ngx-mcp/internal/models"
 )
 
 // doAPIRequest performs a GET API request and returns the response body.
@@ -279,6 +280,129 @@ func deleteByID(
 		resourceName,
 		id,
 	), nil
+}
+
+// fetchByID parses an ID, fetches a resource, and unmarshals the response.
+func fetchByID[T any](
+	ctx context.Context,
+	c *client.Client,
+	args json.RawMessage,
+	pathFmt string,
+) (*T, int, error) {
+	id, err := parseIDArg(args)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	path := fmt.Sprintf(pathFmt, id)
+
+	body, err := doAPIRequest(ctx, c, path)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var result T
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, 0, fmt.Errorf(
+			"failed to parse response: %w",
+			err,
+		)
+	}
+
+	return &result, id, nil
+}
+
+// patchByID parses patch args, performs a PATCH, and unmarshals the response.
+func patchByID[T any](
+	ctx context.Context,
+	c *client.Client,
+	args json.RawMessage,
+	pathFmt string,
+) (*T, error) {
+	id, patchBody, err := parsePatchArgs(args)
+	if err != nil {
+		return nil, err
+	}
+
+	path := fmt.Sprintf(pathFmt, id)
+
+	body, err := doPatchRequest(ctx, c, path, patchBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var result T
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf(
+			"failed to parse response: %w",
+			err,
+		)
+	}
+
+	return &result, nil
+}
+
+// listResources builds a list path, fetches, and unmarshals a paginated list.
+func listResources[T any](
+	ctx context.Context,
+	c *client.Client,
+	basePath string,
+	args json.RawMessage,
+) (*models.PaginatedList[T], error) {
+	path, err := buildListPath(basePath, args)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := doAPIRequest(ctx, c, path)
+	if err != nil {
+		return nil, err
+	}
+
+	var list models.PaginatedList[T]
+	if err := json.Unmarshal(body, &list); err != nil {
+		return nil, fmt.Errorf(
+			"failed to parse response: %w",
+			err,
+		)
+	}
+
+	return &list, nil
+}
+
+// createMatchable creates a matchable resource (correspondent, document type).
+func createMatchable[T any](
+	ctx context.Context,
+	c *client.Client,
+	args json.RawMessage,
+	path string,
+) (*T, error) {
+	var params matchableCreateParams
+	if err := json.Unmarshal(args, &params); err != nil {
+		return nil, fmt.Errorf(
+			"failed to parse arguments: %w",
+			err,
+		)
+	}
+
+	if params.Name == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+
+	body, err := doPostRequest(ctx, c, path, params)
+	if err != nil {
+		return nil, err
+	}
+
+	var result T
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf(
+			"failed to parse response: %w",
+			err,
+		)
+	}
+
+	return &result, nil
 }
 
 // matchableCreateParams holds common parameters for creating matchable

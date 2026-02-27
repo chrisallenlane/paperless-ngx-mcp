@@ -34,14 +34,12 @@ func (t *GetCorrespondent) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, err := parseIDArg(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/correspondents/%d/", id)
-
-	body, err := doAPIRequest(ctx, t.client, path)
+	corr, _, err := fetchByID[models.Correspondent](
+		ctx,
+		t.client,
+		args,
+		"/api/correspondents/%d/",
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to get correspondent: %w",
@@ -49,13 +47,5 @@ func (t *GetCorrespondent) Execute(
 		)
 	}
 
-	var corr models.Correspondent
-	if err := json.Unmarshal(body, &corr); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse correspondent response: %w",
-			err,
-		)
-	}
-
-	return formatCorrespondent(&corr), nil
+	return formatCorrespondent(corr), nil
 }

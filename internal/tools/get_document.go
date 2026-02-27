@@ -34,14 +34,12 @@ func (t *GetDocument) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, err := parseIDArg(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/documents/%d/", id)
-
-	body, err := doAPIRequest(ctx, t.client, path)
+	doc, _, err := fetchByID[models.Document](
+		ctx,
+		t.client,
+		args,
+		"/api/documents/%d/",
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to get document: %w",
@@ -49,13 +47,5 @@ func (t *GetDocument) Execute(
 		)
 	}
 
-	var doc models.Document
-	if err := json.Unmarshal(body, &doc); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse document response: %w",
-			err,
-		)
-	}
-
-	return formatDocument(&doc), nil
+	return formatDocument(doc), nil
 }

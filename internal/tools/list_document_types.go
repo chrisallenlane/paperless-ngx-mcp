@@ -35,12 +35,12 @@ func (t *ListDocumentTypes) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	path, err := buildListPath("/api/document_types/", args)
-	if err != nil {
-		return "", err
-	}
-
-	body, err := doAPIRequest(ctx, t.client, path)
+	list, err := listResources[models.DocumentType](
+		ctx,
+		t.client,
+		"/api/document_types/",
+		args,
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to list document types: %w",
@@ -48,13 +48,5 @@ func (t *ListDocumentTypes) Execute(
 		)
 	}
 
-	var list models.PaginatedList[models.DocumentType]
-	if err := json.Unmarshal(body, &list); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse document types response: %w",
-			err,
-		)
-	}
-
-	return formatDocumentTypeList(&list), nil
+	return formatDocumentTypeList(list), nil
 }

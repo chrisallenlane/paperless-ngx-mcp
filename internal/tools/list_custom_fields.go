@@ -35,12 +35,12 @@ func (t *ListCustomFields) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	path, err := buildListPath("/api/custom_fields/", args)
-	if err != nil {
-		return "", err
-	}
-
-	body, err := doAPIRequest(ctx, t.client, path)
+	list, err := listResources[models.CustomField](
+		ctx,
+		t.client,
+		"/api/custom_fields/",
+		args,
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to list custom fields: %w",
@@ -48,13 +48,5 @@ func (t *ListCustomFields) Execute(
 		)
 	}
 
-	var list models.PaginatedList[models.CustomField]
-	if err := json.Unmarshal(body, &list); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse custom fields response: %w",
-			err,
-		)
-	}
-
-	return formatCustomFieldList(&list), nil
+	return formatCustomFieldList(list), nil
 }

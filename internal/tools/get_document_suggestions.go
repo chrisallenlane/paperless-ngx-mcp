@@ -37,17 +37,12 @@ func (t *GetDocumentSuggestions) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, err := parseIDArg(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf(
+	sugg, id, err := fetchByID[models.DocumentSuggestions](
+		ctx,
+		t.client,
+		args,
 		"/api/documents/%d/suggestions/",
-		id,
 	)
-
-	body, err := doAPIRequest(ctx, t.client, path)
 	if err != nil {
 		return "", fmt.Errorf(
 			"failed to get document suggestions: %w",
@@ -55,13 +50,5 @@ func (t *GetDocumentSuggestions) Execute(
 		)
 	}
 
-	var sugg models.DocumentSuggestions
-	if err := json.Unmarshal(body, &sugg); err != nil {
-		return "", fmt.Errorf(
-			"failed to parse suggestions response: %w",
-			err,
-		)
-	}
-
-	return formatDocumentSuggestions(id, &sugg), nil
+	return formatDocumentSuggestions(id, sugg), nil
 }
