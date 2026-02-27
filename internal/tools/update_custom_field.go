@@ -26,32 +26,7 @@ func (t *UpdateCustomField) Description() string {
 
 // InputSchema returns the JSON schema for the tool's input parameters.
 func (t *UpdateCustomField) InputSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"id": map[string]interface{}{
-				"type":        "integer",
-				"description": "Custom field ID to update",
-			},
-			"name": map[string]interface{}{
-				"type":        "string",
-				"description": "Custom field name",
-			},
-			"data_type": map[string]interface{}{
-				"type": "string",
-				"description": "Data type: string, url, " +
-					"date, boolean, integer, float, " +
-					"monetary, documentlink, " +
-					"select, longtext",
-			},
-			"extra_data": map[string]interface{}{
-				"type": "object",
-				"description": "Additional field " +
-					"configuration (JSON object)",
-			},
-		},
-		"required": []string{"id"},
-	}
+	return customFieldSchema(true)
 }
 
 // Execute runs the tool and returns a formatted custom field summary.

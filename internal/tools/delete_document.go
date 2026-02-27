@@ -3,7 +3,6 @@ package tools
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
 )
@@ -33,22 +32,11 @@ func (t *DeleteDocument) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, err := parseIDArg(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/documents/%d/", id)
-
-	if err := doDeleteRequest(ctx, t.client, path); err != nil {
-		return "", fmt.Errorf(
-			"failed to delete document: %w",
-			err,
-		)
-	}
-
-	return fmt.Sprintf(
-		"Document %d deleted successfully.",
-		id,
-	), nil
+	return deleteByID(
+		ctx,
+		t.client,
+		args,
+		"/api/documents/%d/",
+		"Document",
+	)
 }

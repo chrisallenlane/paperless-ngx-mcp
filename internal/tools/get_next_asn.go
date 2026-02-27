@@ -25,10 +25,7 @@ func (t *GetNextASN) Description() string {
 
 // InputSchema returns the JSON schema for the tool's input parameters.
 func (t *GetNextASN) InputSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"type":       "object",
-		"properties": map[string]interface{}{},
-	}
+	return emptySchema()
 }
 
 // Execute runs the tool and returns the next ASN.

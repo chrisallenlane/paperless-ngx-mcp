@@ -122,6 +122,14 @@ func parsePatchArgs(
 	return id, patchBody, nil
 }
 
+// emptySchema returns an input schema with no parameters.
+func emptySchema() map[string]interface{} {
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": map[string]interface{}{},
+	}
+}
+
 // idOnlySchema returns an input schema with a single required "id" field.
 func idOnlySchema(desc string) map[string]interface{} {
 	return map[string]interface{}{
@@ -201,6 +209,76 @@ func matchableResourceSchema(
 		"properties": props,
 		"required":   required,
 	}
+}
+
+// customFieldSchema returns an input schema for custom field tools.
+// Set includeID to true for update tools, false for create tools.
+func customFieldSchema(
+	includeID bool,
+) map[string]interface{} {
+	props := map[string]interface{}{
+		"name": map[string]interface{}{
+			"type":        "string",
+			"description": "Custom field name",
+		},
+		"data_type": map[string]interface{}{
+			"type": "string",
+			"description": "Data type: string, url, " +
+				"date, boolean, integer, float, " +
+				"monetary, documentlink, " +
+				"select, longtext",
+		},
+		"extra_data": map[string]interface{}{
+			"type": "object",
+			"description": "Additional field " +
+				"configuration (JSON object)",
+		},
+	}
+
+	required := []string{"name", "data_type"}
+	if includeID {
+		props["id"] = map[string]interface{}{
+			"type":        "integer",
+			"description": "Custom field ID to update",
+		}
+		required = []string{"id"}
+	}
+
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": props,
+		"required":   required,
+	}
+}
+
+// deleteByID parses an ID from args and performs a DELETE request.
+func deleteByID(
+	ctx context.Context,
+	c *client.Client,
+	args json.RawMessage,
+	pathFmt string,
+	resourceName string,
+) (string, error) {
+	id, err := parseIDArg(args)
+	if err != nil {
+		return "", err
+	}
+
+	path := fmt.Sprintf(pathFmt, id)
+
+	if err := doDeleteRequest(ctx, c, path); err != nil {
+		return "", fmt.Errorf(
+			"failed to delete %s: %w",
+			resourceName,
+			err,
+		)
+	}
+
+	return fmt.Sprintf(
+		"%s %d deleted successfully.",
+		resourceName,
+		id,
+	), nil
 }
 
 // matchableCreateParams holds common parameters for creating matchable

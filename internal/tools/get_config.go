@@ -26,10 +26,7 @@ func (t *GetConfig) Description() string {
 
 // InputSchema returns the JSON schema for the tool's input parameters.
 func (t *GetConfig) InputSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"type":       "object",
-		"properties": map[string]interface{}{},
-	}
+	return emptySchema()
 }
 
 // Execute runs the tool and returns a formatted configuration summary.

@@ -3,7 +3,6 @@ package tools
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
 )
@@ -33,22 +32,11 @@ func (t *DeleteCustomField) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	id, err := parseIDArg(args)
-	if err != nil {
-		return "", err
-	}
-
-	path := fmt.Sprintf("/api/custom_fields/%d/", id)
-
-	if err := doDeleteRequest(ctx, t.client, path); err != nil {
-		return "", fmt.Errorf(
-			"failed to delete custom field: %w",
-			err,
-		)
-	}
-
-	return fmt.Sprintf(
-		"Custom field %d deleted successfully.",
-		id,
-	), nil
+	return deleteByID(
+		ctx,
+		t.client,
+		args,
+		"/api/custom_fields/%d/",
+		"Custom field",
+	)
 }
