@@ -15,7 +15,7 @@ type getTool[T any] struct {
 	desc    string
 	schema  map[string]interface{}
 	pathFmt string
-	format  func(*T) string
+	format  func(int, *T) string
 }
 
 func (t *getTool[T]) Description() string {
@@ -27,41 +27,6 @@ func (t *getTool[T]) InputSchema() map[string]interface{} {
 }
 
 func (t *getTool[T]) Execute(
-	ctx context.Context,
-	args json.RawMessage,
-) (string, error) {
-	result, _, err := fetchByID[T](
-		ctx,
-		t.client,
-		args,
-		t.pathFmt,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	return t.format(result), nil
-}
-
-// getToolWithID is a GET-by-ID tool that forwards the ID to the
-// formatter.
-type getToolWithID[T any] struct {
-	client  *client.Client
-	desc    string
-	schema  map[string]interface{}
-	pathFmt string
-	format  func(int, *T) string
-}
-
-func (t *getToolWithID[T]) Description() string {
-	return t.desc
-}
-
-func (t *getToolWithID[T]) InputSchema() map[string]interface{} {
-	return t.schema
-}
-
-func (t *getToolWithID[T]) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
