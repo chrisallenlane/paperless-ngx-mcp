@@ -103,6 +103,15 @@ func (s *Server) registerTools() {
 	s.tools["delete_document"] = tools.NewDeleteDocument(
 		s.client,
 	)
+	s.tools["get_document_metadata"] = tools.NewGetDocumentMetadata(
+		s.client,
+	)
+	s.tools["get_document_suggestions"] = tools.NewGetDocumentSuggestions(
+		s.client,
+	)
+	s.tools["get_next_asn"] = tools.NewGetNextASN(
+		s.client,
+	)
 }
 
 // Run starts the MCP server and processes requests
