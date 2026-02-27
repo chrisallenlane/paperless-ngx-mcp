@@ -180,6 +180,30 @@ func NewUpdateDocumentType(c *client.Client) Tool {
 	}
 }
 
+// NewUpdateDocument creates a tool to update a document.
+func NewUpdateDocument(c *client.Client) Tool {
+	return &patchTool[models.Document]{
+		client:  c,
+		desc:    "Update a document in Paperless-NGX",
+		schema:  documentUpdateSchema(),
+		pathFmt: "/api/documents/%d/",
+		format:  formatDocument,
+	}
+}
+
+// NewUpdateConfig creates a tool to update the application
+// configuration.
+func NewUpdateConfig(c *client.Client) Tool {
+	return &patchTool[models.ApplicationConfiguration]{
+		client: c,
+		desc: "Update the application configuration " +
+			"of the Paperless-NGX server",
+		schema:  configUpdateSchema(),
+		pathFmt: "/api/config/%d/",
+		format:  formatConfig,
+	}
+}
+
 // --- Delete tools ---
 
 // NewDeleteCorrespondent creates a tool to delete a correspondent.
