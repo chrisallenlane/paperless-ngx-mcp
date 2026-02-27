@@ -260,7 +260,7 @@ Response formatting functions are split into per-domain files:
 - **`format_tags.go`** - `formatTag` / `formatTagList` (includes color, inbox flag, parent/children)
 - **`format_storage_paths.go`** - `formatStoragePath` / `formatStoragePathList`
 - **`format_saved_views.go`** - `formatSavedView` / `formatSavedViewList` with filter rule display; `ruleTypeName` (types 0–47)
-- **`format_notes.go`** - `formatNote` / `formatNoteList`
+- **`format_notes.go`** - `formatNoteList`
 - **`format_tasks.go`** - `formatTask` / `formatTaskArray` (tasks use a bare array response, not paginated)
 - **`format_statistics.go`** - `formatStatistics`: dynamic key-value map sorted alphabetically
 
