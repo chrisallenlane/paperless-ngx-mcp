@@ -166,3 +166,28 @@ type CustomFieldInstance struct {
 	Field int             `json:"field"`
 	Value json.RawMessage `json:"value"`
 }
+
+// DocumentMetadata represents metadata for a document's files.
+type DocumentMetadata struct {
+	OriginalChecksum     string      `json:"original_checksum"`
+	OriginalSize         int         `json:"original_size"`
+	OriginalMimeType     string      `json:"original_mime_type"`
+	MediaFilename        string      `json:"media_filename"`
+	OriginalFilename     string      `json:"original_filename"`
+	OriginalMetadata     interface{} `json:"original_metadata"`
+	ArchiveChecksum      string      `json:"archive_checksum"`
+	ArchiveSize          int         `json:"archive_size"`
+	ArchiveMediaFilename string      `json:"archive_media_filename"`
+	ArchiveMetadata      interface{} `json:"archive_metadata"`
+	HasArchiveVersion    bool        `json:"has_archive_version"`
+	Lang                 string      `json:"lang"`
+}
+
+// DocumentSuggestions represents AI-generated suggestions for a document.
+type DocumentSuggestions struct {
+	Correspondents []int    `json:"correspondents"`
+	DocumentTypes  []int    `json:"document_types"`
+	StoragePaths   []int    `json:"storage_paths"`
+	Tags           []int    `json:"tags"`
+	Dates          []string `json:"dates"`
+}

@@ -424,3 +424,111 @@ func formatOptStr(v *string) string {
 	}
 	return "(none)"
 }
+
+func formatDocumentMetadata(
+	id int,
+	m *models.DocumentMetadata,
+) string {
+	out := fmt.Sprintf("Document Metadata (ID: %d)\n", id)
+
+	out += "\nOriginal File:\n"
+	out += fmt.Sprintf("  Filename: %s\n", m.OriginalFilename)
+	out += fmt.Sprintf("  MIME Type: %s\n", m.OriginalMimeType)
+	out += fmt.Sprintf("  Size: %s\n", formatFileSize(m.OriginalSize))
+	out += fmt.Sprintf("  Checksum: %s\n", m.OriginalChecksum)
+
+	out += "\nArchive File:\n"
+	out += fmt.Sprintf(
+		"  Has Archive Version: %v\n",
+		m.HasArchiveVersion,
+	)
+	if m.HasArchiveVersion {
+		out += fmt.Sprintf(
+			"  Filename: %s\n",
+			m.ArchiveMediaFilename,
+		)
+		out += fmt.Sprintf(
+			"  Size: %s\n",
+			formatFileSize(m.ArchiveSize),
+		)
+		out += fmt.Sprintf(
+			"  Checksum: %s\n",
+			m.ArchiveChecksum,
+		)
+	}
+
+	out += fmt.Sprintf(
+		"\nMedia Filename: %s\n",
+		m.MediaFilename,
+	)
+	out += fmt.Sprintf("OCR Language: %s\n", m.Lang)
+
+	return out
+}
+
+func formatFileSize(bytes int) string {
+	const (
+		kb = 1024
+		mb = kb * 1024
+		gb = mb * 1024
+	)
+
+	switch {
+	case bytes >= gb:
+		return fmt.Sprintf("%.2f GB", float64(bytes)/float64(gb))
+	case bytes >= mb:
+		return fmt.Sprintf("%.2f MB", float64(bytes)/float64(mb))
+	case bytes >= kb:
+		return fmt.Sprintf("%.2f KB", float64(bytes)/float64(kb))
+	default:
+		return fmt.Sprintf("%d bytes", bytes)
+	}
+}
+
+func formatDocumentSuggestions(
+	id int,
+	s *models.DocumentSuggestions,
+) string {
+	out := fmt.Sprintf("Document Suggestions (ID: %d)\n", id)
+
+	out += fmt.Sprintf(
+		"  Correspondents: %s\n",
+		formatIntSlice(s.Correspondents),
+	)
+	out += fmt.Sprintf(
+		"  Document Types: %s\n",
+		formatIntSlice(s.DocumentTypes),
+	)
+	out += fmt.Sprintf(
+		"  Storage Paths: %s\n",
+		formatIntSlice(s.StoragePaths),
+	)
+	out += fmt.Sprintf(
+		"  Tags: %s\n",
+		formatIntSlice(s.Tags),
+	)
+	out += fmt.Sprintf(
+		"  Dates: %s\n",
+		formatStringSlice(s.Dates),
+	)
+
+	return out
+}
+
+func formatIntSlice(ids []int) string {
+	if len(ids) == 0 {
+		return "(none)"
+	}
+	strs := make([]string, len(ids))
+	for i, id := range ids {
+		strs[i] = fmt.Sprintf("%d", id)
+	}
+	return strings.Join(strs, ", ")
+}
+
+func formatStringSlice(items []string) string {
+	if len(items) == 0 {
+		return "(none)"
+	}
+	return strings.Join(items, ", ")
+}
