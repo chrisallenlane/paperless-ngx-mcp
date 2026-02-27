@@ -139,3 +139,30 @@ type DocumentType struct {
 	IsInsensitive     bool   `json:"is_insensitive"`
 	DocumentCount     int    `json:"document_count"`
 }
+
+// Document represents a Paperless-NGX document.
+type Document struct {
+	ID                  int                   `json:"id"`
+	Title               string                `json:"title"`
+	Content             string                `json:"content"`
+	Correspondent       *int                  `json:"correspondent"`
+	DocumentType        *int                  `json:"document_type"`
+	StoragePath         *int                  `json:"storage_path"`
+	Tags                []int                 `json:"tags"`
+	Created             string                `json:"created"`
+	CreatedDate         string                `json:"created_date"`
+	Added               string                `json:"added"`
+	Modified            string                `json:"modified"`
+	ArchiveSerialNumber *int                  `json:"archive_serial_number"`
+	OriginalFileName    *string               `json:"original_file_name"`
+	ArchivedFileName    *string               `json:"archived_file_name"`
+	MimeType            string                `json:"mime_type"`
+	PageCount           *int                  `json:"page_count"`
+	CustomFields        []CustomFieldInstance `json:"custom_fields"`
+}
+
+// CustomFieldInstance represents a custom field value assigned to a document.
+type CustomFieldInstance struct {
+	Field int             `json:"field"`
+	Value json.RawMessage `json:"value"`
+}
