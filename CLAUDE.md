@@ -39,23 +39,23 @@ paperless-ngx-mcp/
 │       ├── helpers.go                   # Shared utility/HTTP helper functions
 │       ├── helpers_test.go              # Helper function tests
 │       ├── schemas.go                   # JSON schema builder functions
-│       ├── formatters.go                # All response formatting functions
-│       ├── get_config.go                # Application config tool (array response)
-│       ├── get_config_test.go           # Config tool tests
-│       ├── get_statistics.go            # Statistics tool (dynamic response)
-│       ├── get_statistics_test.go       # Statistics tool tests
+│       ├── format_helpers.go            # Shared formatting utilities and helpers
+│       ├── format_status.go             # System status formatter
+│       ├── format_config.go             # Application config formatter
+│       ├── format_correspondents.go     # Correspondent formatters
+│       ├── format_custom_fields.go      # Custom field formatters
+│       ├── format_document_types.go     # Document type formatters
+│       ├── format_documents.go          # Document formatters
+│       ├── format_tags.go               # Tag formatters
+│       ├── format_storage_paths.go      # Storage path formatters
+│       ├── format_saved_views.go        # Saved view formatters
+│       ├── format_notes.go              # Document note formatters
+│       ├── format_tasks.go              # Task formatters
+│       ├── format_statistics.go         # Statistics formatter
 │       ├── list_documents.go            # List documents tool (custom filters)
 │       ├── list_documents_test.go       # List documents tests
 │       ├── list_tasks.go                # List tasks tool (custom filters)
 │       ├── list_tasks_test.go           # List tasks tests
-│       ├── create_custom_field.go       # Create custom field tool
-│       ├── create_custom_field_test.go  # Create custom field tests
-│       ├── create_storage_path.go       # Create storage path tool
-│       ├── create_storage_path_test.go  # Create storage path tests
-│       ├── create_tag.go                # Create tag tool
-│       ├── create_tag_test.go           # Create tag tests
-│       ├── create_saved_view.go         # Create saved view tool
-│       ├── create_saved_view_test.go    # Create saved view tests
 │       ├── list_document_notes.go       # List document notes tool
 │       ├── create_document_note.go      # Create document note tool
 │       ├── delete_document_note.go      # Delete document note tool
@@ -65,7 +65,12 @@ paperless-ngx-mcp/
 │       ├── download_document.go         # Download document tool
 │       ├── download_document_test.go    # Download document tests
 │       ├── tool_common_test.go          # Cross-cutting tests (description, schema)
+│       ├── create_custom_field_test.go  # Create custom field tests
+│       ├── create_storage_path_test.go  # Create storage path tests
+│       ├── create_tag_test.go           # Create tag tests
+│       ├── create_saved_view_test.go    # Create saved view tests
 │       ├── delete_test.go               # Delete tool tests
+│       ├── get_config_test.go           # Config tool tests
 │       ├── get_correspondent_test.go    # Get correspondent tests
 │       ├── get_custom_field_test.go     # Get custom field tests
 │       ├── get_document_metadata_test.go # Get document metadata tests
@@ -73,6 +78,7 @@ paperless-ngx-mcp/
 │       ├── get_document_test.go         # Get document tests
 │       ├── get_document_type_test.go    # Get document type tests
 │       ├── get_next_asn_test.go         # Get next ASN tests
+│       ├── get_statistics_test.go       # Statistics tool tests
 │       ├── get_status_test.go           # Status tool tests
 │       ├── list_document_types_test.go  # List document types tests
 │       ├── list_trash_test.go           # List trash tests
@@ -119,6 +125,10 @@ HTTP client for Paperless-NGX API requests:
 - `Delete(ctx, path)` - DELETE requests
 - `PostMultipart(ctx, path, body, contentType)` - POST requests with multipart/form-data body
 
+**Internal helpers:**
+- `doRequest(ctx, method, path, body)` - JSON request builder; delegates to `doRawRequest`
+- `doRawRequest(ctx, method, path, body, contentType)` - Core request executor; both `doRequest` and `PostMultipart` delegate to it
+
 **Testing Support:**
 - `HTTPDoer` interface allows mocking HTTP requests
 - `NewWithHTTPClient(baseURL, token, httpClient)` - Test constructor
@@ -148,10 +158,11 @@ formatter) rather than behavior. This eliminates per-tool boilerplate.
 
 **Factory types:**
 - **`noArgGetTool[T]`** - GET with no input; unmarshals response into `T`, calls `format(*T)`
-- **`getTool[T]`** - GET by ID; calls `fetchByID[T]`, calls `format(id, *T)`
+- **`noArgGetToolRaw`** - GET with no input and custom response processing; calls `process([]byte)` for responses that cannot be unmarshaled into a single typed struct (e.g., JSON arrays, untyped maps)
+- **`getTool[T]`** - GET by ID; calls `fetchByID[T]`, calls `format(*T)`
 - **`listTool[T]`** - Paginated list; calls `listResources[T]`, calls `format(*PaginatedList[T])`
 - **`patchTool[T]`** - PATCH by ID; calls `patchByID[T]`, calls `format(*T)`
-- **`createMatchableTool[T]`** - POST for matchable resources; calls `createMatchable[T]`, calls `format(*T)`
+- **`createTool[T]`** - POST for creating resources; calls a `validate` function to parse/validate args, then POSTs and calls `format(*T)`
 - **`deleteTool`** - DELETE by ID; calls `deleteByID`, returns confirmation string
 
 **Constructor functions** live in `tool_constructors.go` and instantiate these types
@@ -199,21 +210,21 @@ Shared utility functions to eliminate code duplication:
 - **`parsePatchArgs(args)`** - Extract `id` and build patch body (all fields except `id`)
 
 **Generic operation helpers:**
-- **`fetchByID[T](ctx, client, args, pathFmt)`** - Parse ID, fetch resource, unmarshal response
+- **`fetchByID[T](ctx, client, args, pathFmt)`** - Parse ID, fetch resource, unmarshal response; returns `(*T, error)`
 - **`patchByID[T](ctx, client, args, pathFmt)`** - Parse patch args, PATCH resource, unmarshal response
 - **`listResources[T](ctx, client, basePath, args)`** - Build list path, fetch, unmarshal paginated list
-- **`createMatchable[T](ctx, client, args, path)`** - Parse matchable params, POST, unmarshal response
 - **`deleteByID(ctx, client, args, pathFmt, resourceName)`** - Parse ID, DELETE resource, return confirmation
 
 **Shared types:**
-- **`matchableCreateParams`** - Common params struct for creating matchable resources
 - **`listParams`** - Common pagination and filter parameters
 
 **File path helpers:**
 - **`validateFilePath(path)`** - Validates that a file path is absolute and contains no `..` traversal sequences
 
 **List query helpers:**
+- **`addPaginationQuery(q, page, pageSize)`** - Add page and page_size query parameters from optional values
 - **`buildListPath(basePath, args)`** - Build URL path with query parameters from list args
+- **`appendQuery(basePath, q)`** - Append encoded query parameters to a base path; returns base path unchanged if q is empty
 
 ### Schema Builders (`internal/tools/schemas.go`)
 
@@ -227,40 +238,31 @@ JSON schema builder functions, separated from helpers to keep concerns distinct:
 - **`tagSchema(includeID)`** - Schema for tag tools with name, color, match, matching_algorithm, is_insensitive, is_inbox_tag, parent fields; set `includeID` true for update tools
 - **`storagePathSchema(includeID)`** - Schema for storage path tools with name, path, match, matching_algorithm, is_insensitive fields; set `includeID` true for update tools
 - **`taskListSchema()`** - Schema for the task list tool with status, task_name, type, task_id filters
-- **`savedViewCreateSchema()`** - Schema for creating a saved view with name, show_on_dashboard, show_in_sidebar, filter_rules (required) plus sort/display options
-- **`savedViewUpdateSchema()`** - Schema for updating a saved view; adds required `id` to the create schema fields
+- **`savedViewSchema(includeID)`** - Schema for saved view tools with name, show_on_dashboard, show_in_sidebar, filter_rules (required for create) plus sort/display options; set `includeID` true for update tools
 - **`customFieldSchema(includeID)`** - Schema for custom field tools with name, data_type, extra_data fields
 - **`documentUpdateSchema()`** - Schema for the document update tool with all document fields
 - **`configUpdateSchema()`** - Schema for the config update tool with all config fields
+- **`addMatchableProps(props)`** - Adds match, matching_algorithm, is_insensitive fields to a schema properties map; used by multiple schema builders
+- **`addPaginationProps(props)`** - Adds page and page_size fields to a schema properties map
 - **`withIDForUpdate(props, idDesc, includeID, createRequired)`** - Helper that conditionally adds an `id` field and adjusts required fields; used by schema builders that serve both create and update tools
 
-### Response Formatters (`internal/tools/formatters.go`)
+### Response Formatters (`internal/tools/format_*.go`)
 
-All response formatting functions are centralized here:
+Response formatting functions are split into per-domain files:
 
-- **`formatStatus`** - System status summary
-- **`formatConfig`** - Application configuration grouped by category
-- **`formatStatistics`** - Document and resource count statistics (dynamic key-value map)
-- **`formatMatchableFields`** - Shared formatter for resources with matching fields (name, slug, match, algorithm, document count); used by correspondents, document types, tags, and storage paths
-- **`formatPaginatedList[T]`** - Generic paginated list formatter; handles empty message, header with count, per-item formatting, and pagination hint
-- **`formatCorrespondent`** / **`formatCorrespondentList`** - Correspondent details and lists
-- **`formatCustomField`** / **`formatCustomFieldList`** - Custom field details and lists
-- **`formatDocumentType`** / **`formatDocumentTypeList`** - Document type details and lists
-- **`formatDocument`** / **`formatDocumentList`** - Document details and lists
-- **`formatDocumentMetadata`** - Document file metadata (checksums, sizes, OCR language)
-- **`formatDocumentSuggestions`** - AI-generated document suggestions
-- **`formatTag`** / **`formatTagList`** - Tag details and lists (includes color, inbox flag, parent/children)
-- **`formatStoragePath`** / **`formatStoragePathList`** - Storage path details and lists
-- **`formatTask`** / **`formatTaskArray`** - Single task details and task array list (note: tasks use an array response, not paginated)
-- **`formatNote`** / **`formatNoteList`** - Document note details and lists
-- **`formatSavedView`** / **`formatSavedViewList`** - Saved view details and lists with filter rule display
-- **`ruleTypeName`** - Filter rule type integer-to-name lookup (types 0–47)
-- **`formatOpt[T]`** / **`formatOptJSON`** - Nullable field formatting helpers
-- **`formatOptInt`** / **`formatOptStr`** / **`formatOptDate`** - Nullable int, string, and date formatting helpers
-- **`formatFileSize`** - Human-readable byte size formatting (B/KB/MB/GB)
-- **`formatIntSlice`** / **`formatStringSlice`** - Slice-to-string formatting helpers
-- **`matchingAlgorithmName`** - Matching algorithm integer-to-name lookup
-- **`formatDate`** / **`formatTaskLine`** - Date and task status line formatting
+- **`format_helpers.go`** - Shared utilities: `formatPaginatedList[T]`, `formatMatchableFields`, `matchingAlgorithmName`, `formatOpt[T]`, `formatOptJSON`, `formatOptInt`, `formatOptStr`, `formatOptDate`, `formatDate`, `formatFileSize` (B/KB/MB/GB/TB), `formatIntSlice`, `formatStringSlice`
+- **`format_status.go`** - `formatStatus`: system status summary
+- **`format_config.go`** - `formatConfig`: application configuration grouped by category
+- **`format_correspondents.go`** - `formatCorrespondent` / `formatCorrespondentList`
+- **`format_custom_fields.go`** - `formatCustomField` / `formatCustomFieldList`
+- **`format_document_types.go`** - `formatDocumentType` / `formatDocumentTypeList`
+- **`format_documents.go`** - `formatDocument` / `formatDocumentList` / `formatDocumentMetadata` / `formatDocumentSuggestions`
+- **`format_tags.go`** - `formatTag` / `formatTagList` (includes color, inbox flag, parent/children)
+- **`format_storage_paths.go`** - `formatStoragePath` / `formatStoragePathList`
+- **`format_saved_views.go`** - `formatSavedView` / `formatSavedViewList` with filter rule display; `ruleTypeName` (types 0–47)
+- **`format_notes.go`** - `formatNote` / `formatNoteList`
+- **`format_tasks.go`** - `formatTask` / `formatTaskArray` (tasks use a bare array response, not paginated)
+- **`format_statistics.go`** - `formatStatistics`: dynamic key-value map sorted alphabetically
 
 ## Development Workflow
 
@@ -293,16 +295,17 @@ make install   # Install to $GOPATH/bin
 Most tools are implemented using the data-driven factory types in `tool_factory.go`.
 Choose the appropriate factory type based on what the tool does, then add a constructor
 in `tool_constructors.go`. Only create a dedicated file if the tool has logic that
-cannot be expressed with the factory types (see `get_config.go` and `list_documents.go`
+cannot be expressed with the factory types (see `list_documents.go` and `list_tasks.go`
 for examples).
 
 ### 1. Choose the factory type
 
-- **`noArgGetTool[T]`** - GET with no parameters (e.g., `get_status`, `get_next_asn`)
+- **`noArgGetTool[T]`** - GET with no parameters, typed response (e.g., `get_status`, `get_next_asn`)
+- **`noArgGetToolRaw`** - GET with no parameters, custom response processing (e.g., `get_config`, `get_statistics`)
 - **`getTool[T]`** - GET by ID (e.g., `get_correspondent`, `get_document`, `get_task`)
 - **`listTool[T]`** - Paginated list with optional name filter (e.g., `list_correspondents`, `list_tags`, `list_saved_views`)
 - **`patchTool[T]`** - PATCH by ID (e.g., `update_correspondent`, `update_config`, `update_saved_view`)
-- **`createMatchableTool[T]`** - POST for resources with matching fields (e.g., `create_correspondent`)
+- **`createTool[T]`** - POST for creating resources; requires a `validate` function (e.g., `create_correspondent`, `create_tag`, `create_storage_path`)
 - **`deleteTool`** - DELETE by ID (e.g., `delete_correspondent`, `delete_tag`, `delete_storage_path`)
 
 ### 2. Add a constructor in `internal/tools/tool_constructors.go`
@@ -315,14 +318,14 @@ func NewGetMyResource(c *client.Client) Tool {
         desc:    "Get a my-resource by ID from Paperless-NGX",
         schema:  idOnlySchema("My resource ID"),
         pathFmt: "/api/my_resources/%d/",
-        format: func(_ int, v *models.MyResource) string {
+        format: func(v *models.MyResource) string {
             return formatMyResource(v)
         },
     }
 }
 ```
 
-Add a formatter in `internal/tools/formatters.go` if needed.
+Add a formatter in an appropriate `format_*.go` file if needed.
 
 ### 3. Register in `internal/server/server.go`
 
@@ -348,10 +351,9 @@ make build
 
 Create a dedicated tool file (e.g., `my_tool.go`) only when the tool cannot use a
 factory type, such as when:
-- The API response is not a standard JSON object (e.g., array response like `get_config`, dynamic map like `get_statistics`)
 - The URL construction requires custom logic beyond standard pagination (e.g., `list_documents`, `list_tasks`)
 - The tool has multi-step behavior or non-standard HTTP semantics (e.g., `create_document_note` returns 200 not 201; `delete_document_note` returns 200 not 204)
-- The resource has required fields that don't fit the `matchableCreateParams` struct (e.g., `create_storage_path` requires both `name` and `path`; `create_saved_view` has required boolean fields)
+- The tool streams a response body or uses non-JSON content types (e.g., `upload_document`, `download_document`)
 
 ## Code Quality Standards
 
@@ -379,10 +381,10 @@ Every new tool should have:
 ### Code Organization
 - Keep it simple - prefer standard library over dependencies
 - Use factory types in `tool_factory.go` + constructors in `tool_constructors.go` for standard CRUD tools
-- Create dedicated files only for tools with non-standard logic (array responses, custom URL construction)
+- Create dedicated files only for tools with non-standard logic (custom URL construction, non-JSON content types)
 - Shared HTTP/operation logic in `helpers.go`
 - JSON schema builders in `schemas.go`
-- Response formatting in `formatters.go`
+- Response formatting split into per-domain `format_*.go` files; shared utilities in `format_helpers.go`
 - Type definitions in `models.go`
 
 ## Current Tools
@@ -397,13 +399,13 @@ are noted below.
 - **Output**: Formatted status summary
 - **Model**: `models.SystemStatus`
 
-### `get_config` (`get_config.go` — dedicated file)
+### `get_config` (`tool_constructors.go` — `NewGetConfig`)
 
 - **Endpoint**: `GET /api/config/`
 - **Input**: None
 - **Output**: Config summary grouped by category (OCR, App, Barcode)
 - **Model**: `models.ApplicationConfiguration`
-- **Note**: Dedicated file because response is a JSON array; tool takes the first element
+- **Note**: Uses `noArgGetToolRaw` because response is a JSON array; process function takes the first element
 
 ### `update_config` (`tool_constructors.go` — `NewUpdateConfig`)
 
@@ -431,6 +433,7 @@ are noted below.
 - **Endpoint**: `POST /api/correspondents/`
 - **Input**: `name` (required), `match`, `matching_algorithm`, `is_insensitive` (optional)
 - **Output**: Created correspondent details
+- **Note**: Uses `createTool[T]` with `validateMatchableCreate`
 
 ### `update_correspondent` (`tool_constructors.go` — `NewUpdateCorrespondent`)
 
@@ -458,12 +461,12 @@ are noted below.
 - **Output**: Custom field details with extra data
 - **Model**: `models.CustomField`
 
-### `create_custom_field` (`create_custom_field.go` — dedicated file)
+### `create_custom_field` (`tool_constructors.go` — `NewCreateCustomField`)
 
 - **Endpoint**: `POST /api/custom_fields/`
 - **Input**: `name`, `data_type` (required), `extra_data` (optional)
 - **Output**: Created custom field details
-- **Note**: Dedicated file because custom fields use a different schema than matchable resources
+- **Note**: Uses `createTool[T]` with `validateCreateCustomField`; builds explicit request body to handle optional `extra_data`
 
 ### `update_custom_field` (`tool_constructors.go` — `NewUpdateCustomField`)
 
@@ -496,6 +499,7 @@ are noted below.
 - **Endpoint**: `POST /api/document_types/`
 - **Input**: `name` (required), `match`, `matching_algorithm`, `is_insensitive` (optional)
 - **Output**: Created document type details
+- **Note**: Uses `createTool[T]` with `validateMatchableCreate`
 
 ### `update_document_type` (`tool_constructors.go` — `NewUpdateDocumentType`)
 
@@ -555,7 +559,7 @@ are noted below.
 - **Endpoint**: `GET /api/documents/next_asn/`
 - **Input**: None
 - **Output**: Next available archive serial number
-- **Note**: Response is a bare integer, not a JSON object
+- **Note**: Uses `noArgGetTool[int]`; response is a bare integer, not a JSON object
 
 ### `upload_document` (`upload_document.go` — dedicated file)
 
@@ -586,12 +590,12 @@ are noted below.
 - **Output**: Tag details including color, text color, inbox flag, parent, and children
 - **Model**: `models.Tag`
 
-### `create_tag` (`create_tag.go` — dedicated file)
+### `create_tag` (`tool_constructors.go` — `NewCreateTag`)
 
 - **Endpoint**: `POST /api/tags/`
 - **Input**: `name` (required), `color`, `match`, `matching_algorithm`, `is_insensitive`, `is_inbox_tag`, `parent` (all optional)
 - **Output**: Created tag details
-- **Note**: Dedicated file because `tagSchema` includes fields (color, is_inbox_tag, parent) not in `matchableCreateParams`
+- **Note**: Uses `createTool[T]` with `validateCreateTag`
 
 ### `update_tag` (`tool_constructors.go` — `NewUpdateTag`)
 
@@ -619,12 +623,12 @@ are noted below.
 - **Output**: Storage path details including path template and matching fields
 - **Model**: `models.StoragePath`
 
-### `create_storage_path` (`create_storage_path.go` — dedicated file)
+### `create_storage_path` (`tool_constructors.go` — `NewCreateStoragePath`)
 
 - **Endpoint**: `POST /api/storage_paths/`
 - **Input**: `name`, `path` (both required), `match`, `matching_algorithm`, `is_insensitive` (all optional)
 - **Output**: Created storage path details
-- **Note**: Dedicated file because `create_storage_path` requires both `name` and `path`, which doesn't fit `matchableCreateParams`
+- **Note**: Uses `createTool[T]` with `validateCreateStoragePath`; validates that both `name` and `path` are non-empty
 
 ### `update_storage_path` (`tool_constructors.go` — `NewUpdateStoragePath`)
 
@@ -652,12 +656,12 @@ are noted below.
 - **Output**: Saved view details including all filter rules with human-readable rule type names
 - **Model**: `models.SavedView`
 
-### `create_saved_view` (`create_saved_view.go` — dedicated file)
+### `create_saved_view` (`tool_constructors.go` — `NewCreateSavedView`)
 
 - **Endpoint**: `POST /api/saved_views/`
 - **Input**: `name`, `show_on_dashboard`, `show_in_sidebar`, `filter_rules` (all required); `sort_field`, `sort_reverse`, `page_size`, `display_mode` (all optional)
 - **Output**: Created saved view details
-- **Note**: Dedicated file because `show_on_dashboard`, `show_in_sidebar`, and `filter_rules` are required boolean/array fields that can't be expressed as `matchableCreateParams`
+- **Note**: Uses `createTool[T]` with `validateCreateSavedView`
 
 ### `update_saved_view` (`tool_constructors.go` — `NewUpdateSavedView`)
 
@@ -693,12 +697,12 @@ are noted below.
 - **Output**: Confirmation with the updated note list for the document
 - **Note**: Dedicated file because the note ID is passed as a query parameter (not path segment), the endpoint is nested under a document ID, and it returns HTTP 200 (not 204) with the remaining notes list
 
-### `get_statistics` (`get_statistics.go` — dedicated file)
+### `get_statistics` (`tool_constructors.go` — `NewGetStatistics`)
 
 - **Endpoint**: `GET /api/statistics/`
 - **Input**: None
 - **Output**: Document and resource count statistics (formatted as sorted key-value pairs)
-- **Note**: Dedicated file because the response is a dynamic JSON object with no fixed schema; unmarshaled as `map[string]interface{}`
+- **Note**: Uses `noArgGetToolRaw` because the response is a dynamic JSON object with no fixed schema; unmarshaled as `map[string]interface{}`
 
 ### `list_tasks` (`list_tasks.go` — dedicated file)
 
