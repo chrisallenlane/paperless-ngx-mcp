@@ -1,4 +1,4 @@
-module github.com/chrisallenlane/go-mcp-server
+module github.com/chrisallenlane/paperless-ngx-mcp
 
 go 1.24.4
 

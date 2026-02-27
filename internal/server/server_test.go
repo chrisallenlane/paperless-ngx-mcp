@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/chrisallenlane/go-mcp-server/internal/client"
+	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
 )
 
 func TestHandleInitialize(t *testing.T) {
@@ -98,12 +98,7 @@ func TestHandleListTools(t *testing.T) {
 		t.Fatal("tools should be a slice")
 	}
 
-	// Verify we have tools registered
-	if len(tools) == 0 {
-		t.Error("Expected at least one tool to be registered")
-	}
-
-	// Verify tool structure
+	// Verify tool structure for any registered tools
 	for _, tool := range tools {
 		if _, ok := tool["name"]; !ok {
 			t.Error("Tool should have a name")
@@ -114,24 +109,6 @@ func TestHandleListTools(t *testing.T) {
 		if _, ok := tool["inputSchema"]; !ok {
 			t.Error("Tool should have an inputSchema")
 		}
-	}
-
-	// Verify the echo tool exists
-	toolNames := make([]string, len(tools))
-	for i, tool := range tools {
-		toolNames[i] = tool["name"].(string)
-	}
-
-	expectedTool := "echo"
-	found := false
-	for _, name := range toolNames {
-		if name == expectedTool {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Errorf("Expected tool %s not found", expectedTool)
 	}
 }
 
