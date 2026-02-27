@@ -9,7 +9,7 @@ import (
 )
 
 func TestHandleInitialize(t *testing.T) {
-	c := client.New("http://localhost")
+	c := client.New("http://localhost", "test-token")
 	s := New(c)
 
 	req := &JSONRPCRequest{
@@ -69,7 +69,7 @@ func TestHandleInitialize(t *testing.T) {
 }
 
 func TestHandleListTools(t *testing.T) {
-	c := client.New("http://localhost")
+	c := client.New("http://localhost", "test-token")
 	s := New(c)
 
 	req := &JSONRPCRequest{
@@ -113,7 +113,7 @@ func TestHandleListTools(t *testing.T) {
 }
 
 func TestHandleUnknownMethod(t *testing.T) {
-	c := client.New("http://localhost")
+	c := client.New("http://localhost", "test-token")
 	s := New(c)
 
 	req := &JSONRPCRequest{
@@ -142,7 +142,7 @@ func TestHandleUnknownMethod(t *testing.T) {
 }
 
 func TestHandleCallTool_InvalidTool(t *testing.T) {
-	c := client.New("http://localhost")
+	c := client.New("http://localhost", "test-token")
 	s := New(c)
 
 	params := map[string]interface{}{
@@ -173,7 +173,7 @@ func TestHandleCallTool_InvalidTool(t *testing.T) {
 }
 
 func TestHandleCallTool_MalformedParams(t *testing.T) {
-	c := client.New("http://localhost")
+	c := client.New("http://localhost", "test-token")
 	s := New(c)
 
 	req := &JSONRPCRequest{

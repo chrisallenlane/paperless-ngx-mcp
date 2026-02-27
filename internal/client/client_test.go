@@ -8,7 +8,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	c := New("https://api.example.com")
+	c := New("https://api.example.com", "my-token")
 
 	if c.BaseURL != "https://api.example.com" {
 		t.Errorf(
@@ -17,8 +17,45 @@ func TestNew(t *testing.T) {
 		)
 	}
 
+	if c.Token != "my-token" {
+		t.Errorf("Expected Token to be my-token, got %s", c.Token)
+	}
+
 	if c.HTTPClient == nil {
 		t.Error("Expected HTTPClient to be set")
+	}
+}
+
+func TestAuthHeaderSent(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader != "Token test-token-123" {
+				t.Errorf(
+					"Expected Authorization header 'Token test-token-123', got %q",
+					authHeader,
+				)
+			}
+
+			w.WriteHeader(http.StatusOK)
+		}),
+	)
+	defer server.Close()
+
+	c := NewWithHTTPClient(
+		server.URL,
+		"test-token-123",
+		server.Client(),
+	)
+
+	resp, err := c.Get(context.Background(), "/test")
+	if err != nil {
+		t.Fatalf("Get failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected 200, got %d", resp.StatusCode)
 	}
 }
 
@@ -38,7 +75,7 @@ func TestGet(t *testing.T) {
 	)
 	defer server.Close()
 
-	c := NewWithHTTPClient(server.URL, server.Client())
+	c := NewWithHTTPClient(server.URL, "token", server.Client())
 
 	resp, err := c.Get(context.Background(), "/test")
 	if err != nil {
@@ -72,7 +109,7 @@ func TestPost(t *testing.T) {
 	)
 	defer server.Close()
 
-	c := NewWithHTTPClient(server.URL, server.Client())
+	c := NewWithHTTPClient(server.URL, "token", server.Client())
 
 	resp, err := c.Post(
 		context.Background(),
@@ -101,7 +138,7 @@ func TestPut(t *testing.T) {
 	)
 	defer server.Close()
 
-	c := NewWithHTTPClient(server.URL, server.Client())
+	c := NewWithHTTPClient(server.URL, "token", server.Client())
 
 	resp, err := c.Put(
 		context.Background(),
@@ -130,7 +167,7 @@ func TestDelete(t *testing.T) {
 	)
 	defer server.Close()
 
-	c := NewWithHTTPClient(server.URL, server.Client())
+	c := NewWithHTTPClient(server.URL, "token", server.Client())
 
 	resp, err := c.Delete(context.Background(), "/test/1")
 	if err != nil {
