@@ -165,6 +165,61 @@ func NewGetTask(c *client.Client) Tool {
 	}
 }
 
+// NewListStoragePaths creates a tool to list storage paths.
+func NewListStoragePaths(c *client.Client) Tool {
+	return &listTool[models.StoragePath]{
+		client: c,
+		desc: "List storage paths in Paperless-NGX " +
+			"with optional filtering by name",
+		schema:   paginatedListSchema(),
+		basePath: "/api/storage_paths/",
+		format:   formatStoragePathList,
+	}
+}
+
+// NewGetStoragePath creates a tool to get a storage path by ID.
+func NewGetStoragePath(c *client.Client) Tool {
+	return &getTool[models.StoragePath]{
+		client: c,
+		desc: "Get a storage path by ID " +
+			"from Paperless-NGX",
+		schema:  idOnlySchema("Storage path ID"),
+		pathFmt: "/api/storage_paths/%d/",
+		format: func(
+			_ int,
+			v *models.StoragePath,
+		) string {
+			return formatStoragePath(v)
+		},
+	}
+}
+
+// NewUpdateStoragePath creates a tool to update a storage path.
+func NewUpdateStoragePath(c *client.Client) Tool {
+	return &patchTool[models.StoragePath]{
+		client: c,
+		desc: "Update a storage path " +
+			"in Paperless-NGX",
+		schema:  storagePathSchema(true),
+		pathFmt: "/api/storage_paths/%d/",
+		format:  formatStoragePath,
+	}
+}
+
+// NewDeleteStoragePath creates a tool to delete a storage path.
+func NewDeleteStoragePath(c *client.Client) Tool {
+	return &deleteTool{
+		client: c,
+		desc: "Delete a storage path " +
+			"from Paperless-NGX",
+		schema: idOnlySchema(
+			"Storage path ID to delete",
+		),
+		pathFmt:      "/api/storage_paths/%d/",
+		resourceName: "Storage path",
+	}
+}
+
 // NewListTrash creates a tool to list soft-deleted documents.
 func NewListTrash(c *client.Client) Tool {
 	return &listTool[models.Document]{

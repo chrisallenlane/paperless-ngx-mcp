@@ -57,6 +57,15 @@ var allToolTests = []toolTestEntry{
 
 	// Get (ID-based) tools
 	{
+		name: "GetStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewGetStoragePath(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
 		name: "GetTask",
 		newTool: func(c *client.Client) Tool {
 			return NewGetTask(c)
@@ -143,6 +152,13 @@ var allToolTests = []toolTestEntry{
 		serverArgs: `{}`,
 	},
 	{
+		name: "ListStoragePaths",
+		newTool: func(c *client.Client) Tool {
+			return NewListStoragePaths(c)
+		},
+		serverArgs: `{}`,
+	},
+	{
 		name: "ListDocuments",
 		newTool: func(c *client.Client) Tool {
 			return NewListDocuments(c)
@@ -189,6 +205,14 @@ var allToolTests = []toolTestEntry{
 		serverArgs: `{"name": "Test"}`,
 		required:   []string{"name"},
 	},
+	{
+		name: "CreateStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewCreateStoragePath(c)
+		},
+		serverArgs: `{"name": "Test", "path": "/test/"}`,
+		required:   []string{"name", "path"},
+	},
 
 	// Update tools
 	{
@@ -215,6 +239,16 @@ var allToolTests = []toolTestEntry{
 		name: "UpdateDocumentType",
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateDocumentType(c)
+		},
+		serverArgs:    `{"id": 1, "name": "Test"}`,
+		idArgsFmt:     `{"id": %d}`,
+		missingIDArgs: `{"name": "Test"}`,
+		required:      []string{"id"},
+	},
+	{
+		name: "UpdateStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateStoragePath(c)
 		},
 		serverArgs:    `{"id": 1, "name": "Test"}`,
 		idArgsFmt:     `{"id": %d}`,
@@ -265,6 +299,15 @@ var allToolTests = []toolTestEntry{
 		name: "DeleteDocumentType",
 		newTool: func(c *client.Client) Tool {
 			return NewDeleteDocumentType(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "DeleteStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteStoragePath(c)
 		},
 		serverArgs: `{"id": 1}`,
 		idArgsFmt:  `{"id": %d}`,
@@ -690,6 +733,46 @@ const documentTypeListResponse = `{
 
 // GET happy-path table tests.
 
+const storagePathResponse = `{
+	"id": 1,
+	"slug": "invoices",
+	"name": "Invoices",
+	"path": "{correspondent}/{document_type}/{title}",
+	"match": "invoice",
+	"matching_algorithm": 1,
+	"is_insensitive": true,
+	"document_count": 15
+}`
+
+const storagePathListResponse = `{
+	"count": 2,
+	"next": null,
+	"previous": null,
+	"all": [1, 2],
+	"results": [
+		{
+			"id": 1,
+			"slug": "invoices",
+			"name": "Invoices",
+			"path": "{correspondent}/{document_type}/{title}",
+			"match": "invoice",
+			"matching_algorithm": 1,
+			"is_insensitive": true,
+			"document_count": 15
+		},
+		{
+			"id": 2,
+			"slug": "archive",
+			"name": "Archive",
+			"path": "archive/{created_year}/{title}",
+			"match": "",
+			"matching_algorithm": 6,
+			"is_insensitive": true,
+			"document_count": 5
+		}
+	]
+}`
+
 const taskResponse = `{
 	"id": 1,
 	"task_id": "abc-123-def-456",
@@ -712,6 +795,25 @@ var getToolTests = []struct {
 	responseJSON string
 	checks       []string
 }{
+	{
+		name: "GetStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewGetStoragePath(c)
+		},
+		path:         "/api/storage_paths/1/",
+		args:         `{"id": 1}`,
+		responseJSON: storagePathResponse,
+		checks: []string{
+			"Storage Path (ID: 1)",
+			"Name: Invoices",
+			"Slug: invoices",
+			"Path: {correspondent}/{document_type}/{title}",
+			"Match: invoice",
+			"Matching Algorithm: 1 (Any word)",
+			"Case Insensitive: true",
+			"Document Count: 15",
+		},
+	},
 	{
 		name: "GetTask",
 		newTool: func(c *client.Client) Tool {
@@ -977,6 +1079,24 @@ var listToolTests = []struct {
 		nameFilterName:  "invoice",
 		nameFilterCheck: "Invoice",
 	},
+	{
+		name: "ListStoragePaths",
+		newTool: func(c *client.Client) Tool {
+			return NewListStoragePaths(c)
+		},
+		path:         "/api/storage_paths/",
+		responseJSON: storagePathListResponse,
+		checks: []string{
+			"Storage Paths: 2 total",
+			"Invoices (ID: 1)",
+			"15 documents",
+			"Archive (ID: 2)",
+			"5 documents",
+		},
+		emptyMessage:    "No storage paths found.",
+		nameFilterName:  "invoices",
+		nameFilterCheck: "Invoices",
+	},
 }
 
 func TestList_Execute(t *testing.T) {
@@ -1237,6 +1357,30 @@ var updateToolTests = []struct {
 		checks: []string{
 			"Document Type (ID: 1)",
 			"Name: Updated Type",
+		},
+	},
+	{
+		name: "UpdateStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateStoragePath(c)
+		},
+		path:       "/api/storage_paths/1/",
+		args:       `{"id": 1, "name": "Updated Path"}`,
+		fieldName:  "name",
+		fieldValue: "Updated Path",
+		responseJSON: `{
+			"id": 1,
+			"slug": "updated-path",
+			"name": "Updated Path",
+			"path": "{correspondent}/{title}",
+			"match": "invoice",
+			"matching_algorithm": 1,
+			"is_insensitive": true,
+			"document_count": 15
+		}`,
+		checks: []string{
+			"Storage Path (ID: 1)",
+			"Name: Updated Path",
 		},
 	},
 }

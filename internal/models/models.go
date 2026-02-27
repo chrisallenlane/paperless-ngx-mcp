@@ -183,6 +183,18 @@ type DocumentMetadata struct {
 	Lang                 string      `json:"lang"`
 }
 
+// StoragePath represents a Paperless-NGX storage path.
+type StoragePath struct {
+	ID                int    `json:"id"`
+	Slug              string `json:"slug"`
+	Name              string `json:"name"`
+	Path              string `json:"path"`
+	Match             string `json:"match"`
+	MatchingAlgorithm int    `json:"matching_algorithm"`
+	IsInsensitive     bool   `json:"is_insensitive"`
+	DocumentCount     int    `json:"document_count"`
+}
+
 // Task represents a Paperless-NGX background processing task.
 type Task struct {
 	ID              int     `json:"id"`

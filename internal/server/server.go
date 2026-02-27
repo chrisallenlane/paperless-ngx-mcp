@@ -118,6 +118,21 @@ func (s *Server) registerTools() {
 	s.tools["download_document"] = tools.NewDownloadDocument(
 		s.client,
 	)
+	s.tools["list_storage_paths"] = tools.NewListStoragePaths(
+		s.client,
+	)
+	s.tools["get_storage_path"] = tools.NewGetStoragePath(
+		s.client,
+	)
+	s.tools["create_storage_path"] = tools.NewCreateStoragePath(
+		s.client,
+	)
+	s.tools["update_storage_path"] = tools.NewUpdateStoragePath(
+		s.client,
+	)
+	s.tools["delete_storage_path"] = tools.NewDeleteStoragePath(
+		s.client,
+	)
 	s.tools["get_statistics"] = tools.NewGetStatistics(
 		s.client,
 	)
