@@ -61,6 +61,21 @@ func (s *Server) registerTools() {
 	s.tools["delete_correspondent"] = tools.NewDeleteCorrespondent(
 		s.client,
 	)
+	s.tools["list_custom_fields"] = tools.NewListCustomFields(
+		s.client,
+	)
+	s.tools["get_custom_field"] = tools.NewGetCustomField(
+		s.client,
+	)
+	s.tools["create_custom_field"] = tools.NewCreateCustomField(
+		s.client,
+	)
+	s.tools["update_custom_field"] = tools.NewUpdateCustomField(
+		s.client,
+	)
+	s.tools["delete_custom_field"] = tools.NewDeleteCustomField(
+		s.client,
+	)
 }
 
 // Run starts the MCP server and processes requests
