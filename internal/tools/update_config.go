@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/models"
@@ -186,23 +184,14 @@ func (t *UpdateConfig) Execute(
 
 	path := fmt.Sprintf("/api/config/%d/", id)
 
-	resp, err := t.client.Patch(ctx, path, patchBody)
+	body, err := doPatchRequest(
+		ctx,
+		t.client,
+		path,
+		patchBody,
+	)
 	if err != nil {
 		return "", fmt.Errorf("failed to update config: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf(
-			"unexpected status code %d: %s",
-			resp.StatusCode,
-			string(body),
-		)
 	}
 
 	var config models.ApplicationConfiguration

@@ -32,12 +32,16 @@ paperless-ngx-mcp/
 │   │   ├── server.go          # JSON-RPC server, request routing
 │   │   ├── server_test.go     # Protocol tests
 │   │   └── types.go           # JSON-RPC request/response types
-│   └── tools/                 # MCP tool implementations
-│       ├── tool.go            # Tool interface definition
-│       ├── helpers.go         # Shared utility functions
-│       ├── helpers_test.go    # Helper function tests
-│       ├── get_status.go      # System status tool
-│       └── get_status_test.go # Status tool tests
+│   └── tools/                    # MCP tool implementations
+│       ├── tool.go               # Tool interface definition
+│       ├── helpers.go            # Shared utility functions
+│       ├── helpers_test.go       # Helper function tests
+│       ├── get_status.go         # System status tool
+│       ├── get_status_test.go    # Status tool tests
+│       ├── get_config.go         # Application config tool
+│       ├── get_config_test.go    # Config tool tests
+│       ├── update_config.go      # Config update tool
+│       └── update_config_test.go # Config update tests
 ├── Makefile                   # Build automation
 ├── CLAUDE.md                  # This file
 ├── README.md                  # User-facing documentation
@@ -76,11 +80,12 @@ HTTP client for Paperless-NGX API requests:
 - `Get(ctx, path)` - GET requests
 - `Post(ctx, path, body)` - POST requests with JSON body
 - `Put(ctx, path, body)` - PUT requests with JSON body
+- `Patch(ctx, path, body)` - PATCH requests with JSON body
 - `Delete(ctx, path)` - DELETE requests
 
 **Testing Support:**
 - `HTTPDoer` interface allows mocking HTTP requests
-- `NewWithHTTPClient(baseURL, httpClient)` - Test constructor
+- `NewWithHTTPClient(baseURL, token, httpClient)` - Test constructor
 - Use `httptest.Server` for testing without real API calls
 
 ### Tool Interface (`internal/tools/tool.go`)
@@ -129,8 +134,9 @@ type SystemStatus struct {
 
 Shared utility functions to eliminate code duplication:
 
-**`doAPIRequest(ctx, client, path)`** - Common HTTP request pattern
-**`ParseJSONResponse(body, target)`** - Type-safe JSON parsing
+**`doAPIRequest(ctx, client, path)`** - Common GET request pattern
+**`doPatchRequest(ctx, client, path, body)`** - Common PATCH request pattern
+**`readResponse(resp)`** - Read and validate HTTP response body
 
 ## Development Workflow
 
@@ -215,7 +221,7 @@ func (t *MyTool) Execute(ctx context.Context, args json.RawMessage) (string, err
     }
 
     var result YourModel
-    if err := ParseJSONResponse(body, &result); err != nil {
+    if err := json.Unmarshal(body, &result); err != nil {
         return "", fmt.Errorf("failed to parse response: %w", err)
     }
 
@@ -249,7 +255,7 @@ make build
 Always validate input before making API calls.
 
 ### Use Helper Functions
-Prefer `doAPIRequest` and `ParseJSONResponse` over duplicating HTTP boilerplate.
+Prefer `doAPIRequest`/`doPatchRequest` over duplicating HTTP boilerplate.
 
 ### Type Safety
 Use models package instead of `map[string]interface{}`.
@@ -280,6 +286,21 @@ Every new tool should have:
 - **Input**: None (no parameters)
 - **Output**: Human-readable formatted status summary
 - **Model**: `models.SystemStatus` — parses version, storage, database, and task statuses
+
+### `get_config` (`internal/tools/get_config.go`)
+
+- **Endpoint**: `GET /api/config/`
+- **Input**: None (no parameters)
+- **Output**: Human-readable config summary grouped by category (OCR, App, Barcode)
+- **Model**: `models.ApplicationConfiguration` — nullable fields, `json.RawMessage` for JSON fields
+- **Note**: Response is a JSON array; tool takes the first element
+
+### `update_config` (`internal/tools/update_config.go`)
+
+- **Endpoint**: `PATCH /api/config/{id}/`
+- **Input**: `id` (required, integer) + any config fields as optional parameters
+- **Output**: Human-readable updated config summary (reuses `formatConfig` from get_config)
+- **Note**: Only fields included in the request body are modified; `app_logo` skipped (binary upload)
 
 ## Configuration
 

@@ -64,73 +64,52 @@ func formatConfig(c *models.ApplicationConfiguration) string {
 	)
 
 	out += "\nOCR Settings:\n"
-	out += formatOptStr("  Output Type", c.OutputType)
-	out += formatOptInt("  Pages", c.Pages)
-	out += formatOptStr("  Language", c.Language)
-	out += formatOptStr("  Mode", c.Mode)
-	out += formatOptStr("  Skip Archive File", c.SkipArchiveFile)
-	out += formatOptInt("  Image DPI", c.ImageDPI)
-	out += formatOptStr("  Unpaper Clean", c.UnpaperClean)
-	out += formatOptBool("  Deskew", c.Deskew)
-	out += formatOptBool("  Rotate Pages", c.RotatePages)
-	out += formatOptFloat("  Rotate Pages Threshold", c.RotatePagesThreshold)
-	out += formatOptFloat("  Max Image Pixels", c.MaxImagePixels)
-	out += formatOptStr(
+	out += formatOpt("  Output Type", c.OutputType)
+	out += formatOpt("  Pages", c.Pages)
+	out += formatOpt("  Language", c.Language)
+	out += formatOpt("  Mode", c.Mode)
+	out += formatOpt("  Skip Archive File", c.SkipArchiveFile)
+	out += formatOpt("  Image DPI", c.ImageDPI)
+	out += formatOpt("  Unpaper Clean", c.UnpaperClean)
+	out += formatOpt("  Deskew", c.Deskew)
+	out += formatOpt("  Rotate Pages", c.RotatePages)
+	out += formatOpt("  Rotate Pages Threshold", c.RotatePagesThreshold)
+	out += formatOpt("  Max Image Pixels", c.MaxImagePixels)
+	out += formatOpt(
 		"  Color Conversion Strategy",
 		c.ColorConversionStrategy,
 	)
 	out += formatOptJSON("  User Args", c.UserArgs)
 
 	out += "\nApp Settings:\n"
-	out += formatOptStr("  Title", c.AppTitle)
-	out += formatOptStr("  Logo", c.AppLogo)
+	out += formatOpt("  Title", c.AppTitle)
+	out += formatOpt("  Logo", c.AppLogo)
 
 	out += "\nBarcode Settings:\n"
-	out += formatOptBool("  Enabled", c.BarcodesEnabled)
-	out += formatOptBool(
+	out += formatOpt("  Enabled", c.BarcodesEnabled)
+	out += formatOpt(
 		"  TIFF Support",
 		c.BarcodeEnableTiffSupport,
 	)
-	out += formatOptStr("  String", c.BarcodeString)
-	out += formatOptBool(
+	out += formatOpt("  String", c.BarcodeString)
+	out += formatOpt(
 		"  Retain Split Pages",
 		c.BarcodeRetainSplitPages,
 	)
-	out += formatOptBool("  Enable ASN", c.BarcodeEnableASN)
-	out += formatOptStr("  ASN Prefix", c.BarcodeASNPrefix)
-	out += formatOptFloat("  Upscale", c.BarcodeUpscale)
-	out += formatOptInt("  DPI", c.BarcodeDPI)
-	out += formatOptInt("  Max Pages", c.BarcodeMaxPages)
-	out += formatOptBool("  Enable Tag", c.BarcodeEnableTag)
+	out += formatOpt("  Enable ASN", c.BarcodeEnableASN)
+	out += formatOpt("  ASN Prefix", c.BarcodeASNPrefix)
+	out += formatOpt("  Upscale", c.BarcodeUpscale)
+	out += formatOpt("  DPI", c.BarcodeDPI)
+	out += formatOpt("  Max Pages", c.BarcodeMaxPages)
+	out += formatOpt("  Enable Tag", c.BarcodeEnableTag)
 	out += formatOptJSON("  Tag Mapping", c.BarcodeTagMapping)
 
 	return out
 }
 
-func formatOptStr(label string, v *string) string {
+func formatOpt[T any](label string, v *T) string {
 	if v != nil {
-		return fmt.Sprintf("%s: %s\n", label, *v)
-	}
-	return fmt.Sprintf("%s: (default)\n", label)
-}
-
-func formatOptInt(label string, v *int64) string {
-	if v != nil {
-		return fmt.Sprintf("%s: %d\n", label, *v)
-	}
-	return fmt.Sprintf("%s: (default)\n", label)
-}
-
-func formatOptBool(label string, v *bool) string {
-	if v != nil {
-		return fmt.Sprintf("%s: %t\n", label, *v)
-	}
-	return fmt.Sprintf("%s: (default)\n", label)
-}
-
-func formatOptFloat(label string, v *float64) string {
-	if v != nil {
-		return fmt.Sprintf("%s: %g\n", label, *v)
+		return fmt.Sprintf("%s: %v\n", label, *v)
 	}
 	return fmt.Sprintf("%s: (default)\n", label)
 }

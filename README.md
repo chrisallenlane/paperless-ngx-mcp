@@ -75,6 +75,24 @@ Returns the current system status of the Paperless-NGX server, including:
 - Database, Redis, and Celery status
 - Index, classifier, and sanity check status with last-run timestamps
 
+### `get_config`
+
+Returns the current application configuration, grouped by category:
+- OCR settings (output type, language, mode, DPI, etc.)
+- App settings (title, logo)
+- Barcode settings (enabled, DPI, ASN prefix, etc.)
+
+Null values display as "(default)" to indicate server defaults are in use.
+
+### `update_config`
+
+Updates application configuration via PATCH request. Accepts:
+- `id` (required) — config ID to update (typically 1)
+- Any config field as an optional parameter
+
+Only fields included in the request are modified. Returns the updated
+configuration summary.
+
 ## Development
 
 ### Build

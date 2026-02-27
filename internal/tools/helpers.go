@@ -3,7 +3,6 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,7 +10,7 @@ import (
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
 )
 
-// doAPIRequest performs an API request and returns the response body.
+// doAPIRequest performs a GET API request and returns the response body.
 // It handles common patterns: making the request, checking status, reading body.
 // Includes response body in error messages when status is not OK.
 func doAPIRequest(
@@ -23,6 +22,25 @@ func doAPIRequest(
 	if err != nil {
 		return nil, err
 	}
+	return readResponse(resp)
+}
+
+// doPatchRequest performs a PATCH API request and returns the response body.
+func doPatchRequest(
+	ctx context.Context,
+	c *client.Client,
+	path string,
+	body interface{},
+) ([]byte, error) {
+	resp, err := c.Patch(ctx, path, body)
+	if err != nil {
+		return nil, err
+	}
+	return readResponse(resp)
+}
+
+// readResponse reads and validates an HTTP response, returning the body bytes.
+func readResponse(resp *http.Response) ([]byte, error) {
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -39,12 +57,4 @@ func doAPIRequest(
 	}
 
 	return body, nil
-}
-
-// ParseJSONResponse unmarshals a JSON response body into the provided interface.
-func ParseJSONResponse(body []byte, v interface{}) error {
-	if err := json.Unmarshal(body, v); err != nil {
-		return fmt.Errorf("failed to parse response: %w", err)
-	}
-	return nil
 }
