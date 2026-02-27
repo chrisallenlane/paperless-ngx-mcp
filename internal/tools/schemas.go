@@ -1,5 +1,30 @@
 package tools
 
+// withIDForUpdate conditionally adds an "id" field to a schema
+// properties map and adjusts the required fields. When includeID
+// is true, the schema becomes an update schema (id required);
+// otherwise the original createRequired fields are used.
+func withIDForUpdate(
+	props map[string]interface{},
+	idDesc string,
+	includeID bool,
+	createRequired []string,
+) []string {
+	if includeID {
+		props["id"] = map[string]interface{}{
+			"type":        "integer",
+			"description": idDesc,
+		}
+		return []string{"id"}
+	}
+	return createRequired
+}
+
+const matchingAlgorithmDesc = "Matching algorithm: " +
+	"0=None, 1=Any word, 2=All words, " +
+	"3=Exact match, 4=Regex, " +
+	"5=Fuzzy word, 6=Automatic"
+
 // emptySchema returns an input schema with no parameters.
 func emptySchema() map[string]interface{} {
 	return map[string]interface{}{
@@ -43,11 +68,8 @@ func tagSchema(
 				"for auto-assignment",
 		},
 		"matching_algorithm": map[string]interface{}{
-			"type": "integer",
-			"description": "Matching algorithm: " +
-				"0=None, 1=Any word, 2=All words, " +
-				"3=Exact match, 4=Regex, " +
-				"5=Fuzzy word, 6=Automatic",
+			"type":        "integer",
+			"description": matchingAlgorithmDesc,
 		},
 		"is_insensitive": map[string]interface{}{
 			"type":        "boolean",
@@ -65,14 +87,12 @@ func tagSchema(
 		},
 	}
 
-	required := []string{"name"}
-	if includeID {
-		props["id"] = map[string]interface{}{
-			"type":        "integer",
-			"description": "Tag ID to update",
-		}
-		required = []string{"id"}
-	}
+	required := withIDForUpdate(
+		props,
+		"Tag ID to update",
+		includeID,
+		[]string{"name"},
+	)
 
 	return map[string]interface{}{
 		"type":       "object",
@@ -103,11 +123,8 @@ func storagePathSchema(
 				"for auto-assignment",
 		},
 		"matching_algorithm": map[string]interface{}{
-			"type": "integer",
-			"description": "Matching algorithm: " +
-				"0=None, 1=Any word, 2=All words, " +
-				"3=Exact match, 4=Regex, " +
-				"5=Fuzzy word, 6=Automatic",
+			"type":        "integer",
+			"description": matchingAlgorithmDesc,
 		},
 		"is_insensitive": map[string]interface{}{
 			"type":        "boolean",
@@ -115,14 +132,12 @@ func storagePathSchema(
 		},
 	}
 
-	required := []string{"name", "path"}
-	if includeID {
-		props["id"] = map[string]interface{}{
-			"type":        "integer",
-			"description": "Storage path ID to update",
-		}
-		required = []string{"id"}
-	}
+	required := withIDForUpdate(
+		props,
+		"Storage path ID to update",
+		includeID,
+		[]string{"name", "path"},
+	)
 
 	return map[string]interface{}{
 		"type":       "object",
@@ -166,19 +181,10 @@ func taskListSchema() map[string]interface{} {
 // paginationOnlySchema returns an input schema with only page and
 // page_size parameters (no name filter).
 func paginationOnlySchema() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"page": map[string]interface{}{
-				"type":        "integer",
-				"description": "Page number (default 1)",
-			},
-			"page_size": map[string]interface{}{
-				"type":        "integer",
-				"description": "Results per page (default 25)",
-			},
-		},
-	}
+	s := paginatedListSchema()
+	props := s["properties"].(map[string]interface{})
+	delete(props, "name")
+	return s
 }
 
 // paginatedListSchema returns an input schema for paginated list endpoints.
@@ -220,11 +226,8 @@ func matchableResourceSchema(
 			"description": "Match pattern for auto-assignment",
 		},
 		"matching_algorithm": map[string]interface{}{
-			"type": "integer",
-			"description": "Matching algorithm: " +
-				"0=None, 1=Any word, 2=All words, " +
-				"3=Exact match, 4=Regex, " +
-				"5=Fuzzy word, 6=Automatic",
+			"type":        "integer",
+			"description": matchingAlgorithmDesc,
 		},
 		"is_insensitive": map[string]interface{}{
 			"type":        "boolean",
@@ -232,14 +235,12 @@ func matchableResourceSchema(
 		},
 	}
 
-	required := []string{"name"}
-	if includeID {
-		props["id"] = map[string]interface{}{
-			"type":        "integer",
-			"description": resourceName + " ID to update",
-		}
-		required = []string{"id"}
-	}
+	required := withIDForUpdate(
+		props,
+		resourceName+" ID to update",
+		includeID,
+		[]string{"name"},
+	)
 
 	return map[string]interface{}{
 		"type":       "object",
@@ -272,14 +273,12 @@ func customFieldSchema(
 		},
 	}
 
-	required := []string{"name", "data_type"}
-	if includeID {
-		props["id"] = map[string]interface{}{
-			"type":        "integer",
-			"description": "Custom field ID to update",
-		}
-		required = []string{"id"}
-	}
+	required := withIDForUpdate(
+		props,
+		"Custom field ID to update",
+		includeID,
+		[]string{"name", "data_type"},
+	)
 
 	return map[string]interface{}{
 		"type":       "object",
