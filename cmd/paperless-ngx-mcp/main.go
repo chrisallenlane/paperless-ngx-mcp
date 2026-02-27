@@ -24,7 +24,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	c := client.New(paperlessURL)
+	c := client.New(paperlessURL, paperlessToken)
 	s := server.New(c)
 
 	log.SetOutput(os.Stderr)
