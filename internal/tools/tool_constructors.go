@@ -152,6 +152,18 @@ func NewListDocumentTypes(c *client.Client) Tool {
 	}
 }
 
+// NewListTrash creates a tool to list soft-deleted documents.
+func NewListTrash(c *client.Client) Tool {
+	return &listTool[models.Document]{
+		client: c,
+		desc: "List soft-deleted documents in the " +
+			"Paperless-NGX trash",
+		schema:   paginationOnlySchema(),
+		basePath: "/api/trash/",
+		format:   formatDocumentList,
+	}
+}
+
 // --- Create tools ---
 
 // NewCreateCorrespondent creates a tool to create a correspondent.

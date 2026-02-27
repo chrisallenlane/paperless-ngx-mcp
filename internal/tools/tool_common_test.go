@@ -47,6 +47,13 @@ var allToolTests = []toolTestEntry{
 		},
 		serverArgs: `{}`,
 	},
+	{
+		name: "GetStatistics",
+		newTool: func(c *client.Client) Tool {
+			return NewGetStatistics(c)
+		},
+		serverArgs: `{}`,
+	},
 
 	// Get (ID-based) tools
 	{
@@ -130,6 +137,13 @@ var allToolTests = []toolTestEntry{
 		name: "ListDocuments",
 		newTool: func(c *client.Client) Tool {
 			return NewListDocuments(c)
+		},
+		serverArgs: `{}`,
+	},
+	{
+		name: "ListTrash",
+		newTool: func(c *client.Client) Tool {
+			return NewListTrash(c)
 		},
 		serverArgs: `{}`,
 	},

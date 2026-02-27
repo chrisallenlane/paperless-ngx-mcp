@@ -118,6 +118,12 @@ func (s *Server) registerTools() {
 	s.tools["download_document"] = tools.NewDownloadDocument(
 		s.client,
 	)
+	s.tools["get_statistics"] = tools.NewGetStatistics(
+		s.client,
+	)
+	s.tools["list_trash"] = tools.NewListTrash(
+		s.client,
+	)
 }
 
 // Run starts the MCP server and processes requests
