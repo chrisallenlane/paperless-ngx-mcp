@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -210,5 +211,173 @@ func TestSystemStatusUnmarshalWithErrors(t *testing.T) {
 
 	if status.Tasks.CeleryURL != nil {
 		t.Errorf("CeleryURL = %v, want nil", status.Tasks.CeleryURL)
+	}
+}
+
+func TestApplicationConfigurationUnmarshal(t *testing.T) {
+	jsonData := `[{
+		"id": 1,
+		"output_type": "pdfa",
+		"pages": 5,
+		"language": "eng+deu",
+		"mode": "skip",
+		"skip_archive_file": "with_text",
+		"image_dpi": 300,
+		"unpaper_clean": "clean",
+		"deskew": true,
+		"rotate_pages": false,
+		"rotate_pages_threshold": 12.5,
+		"max_image_pixels": 500000000.0,
+		"color_conversion_strategy": "RGB",
+		"user_args": {"--deskew": true},
+		"app_title": "My Paperless",
+		"app_logo": "/media/logo/custom.png",
+		"barcodes_enabled": true,
+		"barcode_enable_tiff_support": false,
+		"barcode_string": "PATCHT",
+		"barcode_retain_split_pages": true,
+		"barcode_enable_asn": true,
+		"barcode_asn_prefix": "ASN",
+		"barcode_upscale": 1.5,
+		"barcode_dpi": 200,
+		"barcode_max_pages": 10,
+		"barcode_enable_tag": false,
+		"barcode_tag_mapping": {"ASN": "tag1"}
+	}]`
+
+	var configs []ApplicationConfiguration
+	if err := json.Unmarshal([]byte(jsonData), &configs); err != nil {
+		t.Fatalf("Failed to unmarshal: %v", err)
+	}
+
+	if len(configs) != 1 {
+		t.Fatalf("Expected 1 config, got %d", len(configs))
+	}
+
+	c := configs[0]
+
+	if c.ID != 1 {
+		t.Errorf("ID = %d, want 1", c.ID)
+	}
+
+	if c.OutputType == nil || *c.OutputType != "pdfa" {
+		t.Errorf("OutputType = %v, want pdfa", c.OutputType)
+	}
+
+	if c.Pages == nil || *c.Pages != 5 {
+		t.Errorf("Pages = %v, want 5", c.Pages)
+	}
+
+	if c.Language == nil || *c.Language != "eng+deu" {
+		t.Errorf("Language = %v, want eng+deu", c.Language)
+	}
+
+	if c.Deskew == nil || *c.Deskew != true {
+		t.Errorf("Deskew = %v, want true", c.Deskew)
+	}
+
+	if c.RotatePages == nil || *c.RotatePages != false {
+		t.Errorf("RotatePages = %v, want false", c.RotatePages)
+	}
+
+	if c.RotatePagesThreshold == nil || *c.RotatePagesThreshold != 12.5 {
+		t.Errorf(
+			"RotatePagesThreshold = %v, want 12.5",
+			c.RotatePagesThreshold,
+		)
+	}
+
+	if c.AppTitle == nil || *c.AppTitle != "My Paperless" {
+		t.Errorf("AppTitle = %v, want My Paperless", c.AppTitle)
+	}
+
+	if c.BarcodesEnabled == nil || *c.BarcodesEnabled != true {
+		t.Errorf(
+			"BarcodesEnabled = %v, want true",
+			c.BarcodesEnabled,
+		)
+	}
+
+	if c.BarcodeUpscale == nil || *c.BarcodeUpscale != 1.5 {
+		t.Errorf(
+			"BarcodeUpscale = %v, want 1.5",
+			c.BarcodeUpscale,
+		)
+	}
+
+	if c.UserArgs == nil ||
+		!strings.Contains(string(c.UserArgs), "--deskew") {
+		t.Errorf("UserArgs = %v, want JSON with --deskew", c.UserArgs)
+	}
+
+	if c.BarcodeTagMapping == nil ||
+		!strings.Contains(string(c.BarcodeTagMapping), "ASN") {
+		t.Errorf(
+			"BarcodeTagMapping = %v, want JSON with ASN",
+			c.BarcodeTagMapping,
+		)
+	}
+}
+
+func TestApplicationConfigurationUnmarshalAllNulls(t *testing.T) {
+	jsonData := `[{
+		"id": 1,
+		"output_type": null,
+		"pages": null,
+		"language": null,
+		"mode": null,
+		"skip_archive_file": null,
+		"image_dpi": null,
+		"unpaper_clean": null,
+		"deskew": null,
+		"rotate_pages": null,
+		"rotate_pages_threshold": null,
+		"max_image_pixels": null,
+		"color_conversion_strategy": null,
+		"user_args": null,
+		"app_title": null,
+		"app_logo": null,
+		"barcodes_enabled": null,
+		"barcode_enable_tiff_support": null,
+		"barcode_string": null,
+		"barcode_retain_split_pages": null,
+		"barcode_enable_asn": null,
+		"barcode_asn_prefix": null,
+		"barcode_upscale": null,
+		"barcode_dpi": null,
+		"barcode_max_pages": null,
+		"barcode_enable_tag": null,
+		"barcode_tag_mapping": null
+	}]`
+
+	var configs []ApplicationConfiguration
+	if err := json.Unmarshal([]byte(jsonData), &configs); err != nil {
+		t.Fatalf("Failed to unmarshal: %v", err)
+	}
+
+	c := configs[0]
+
+	if c.ID != 1 {
+		t.Errorf("ID = %d, want 1", c.ID)
+	}
+
+	if c.OutputType != nil {
+		t.Errorf("OutputType = %v, want nil", c.OutputType)
+	}
+
+	if c.Pages != nil {
+		t.Errorf("Pages = %v, want nil", c.Pages)
+	}
+
+	if c.Deskew != nil {
+		t.Errorf("Deskew = %v, want nil", c.Deskew)
+	}
+
+	if c.AppTitle != nil {
+		t.Errorf("AppTitle = %v, want nil", c.AppTitle)
+	}
+
+	if c.BarcodesEnabled != nil {
+		t.Errorf("BarcodesEnabled = %v, want nil", c.BarcodesEnabled)
 	}
 }

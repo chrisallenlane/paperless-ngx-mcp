@@ -1,6 +1,8 @@
 // Package models defines the data structures for the paperless-ngx-mcp server.
 package models
 
+import "encoding/json"
+
 // SystemStatus represents the response from the Paperless-NGX /api/status/
 // endpoint.
 type SystemStatus struct {
@@ -56,4 +58,43 @@ type TasksStatus struct {
 	SanityCheckStatus  string  `json:"sanity_check_status"`
 	SanityCheckLastRun *string `json:"sanity_check_last_run"`
 	SanityCheckError   *string `json:"sanity_check_error"`
+}
+
+// ApplicationConfiguration represents the response from the Paperless-NGX
+// /api/config/ endpoint. All fields except ID are nullable (nil means the
+// server default is in use).
+type ApplicationConfiguration struct {
+	ID int `json:"id"`
+
+	// OCR settings
+	OutputType              *string         `json:"output_type"`
+	Pages                   *int64          `json:"pages"`
+	Language                *string         `json:"language"`
+	Mode                    *string         `json:"mode"`
+	SkipArchiveFile         *string         `json:"skip_archive_file"`
+	ImageDPI                *int64          `json:"image_dpi"`
+	UnpaperClean            *string         `json:"unpaper_clean"`
+	Deskew                  *bool           `json:"deskew"`
+	RotatePages             *bool           `json:"rotate_pages"`
+	RotatePagesThreshold    *float64        `json:"rotate_pages_threshold"`
+	MaxImagePixels          *float64        `json:"max_image_pixels"`
+	ColorConversionStrategy *string         `json:"color_conversion_strategy"`
+	UserArgs                json.RawMessage `json:"user_args"`
+
+	// App settings
+	AppTitle *string `json:"app_title"`
+	AppLogo  *string `json:"app_logo"`
+
+	// Barcode settings
+	BarcodesEnabled          *bool           `json:"barcodes_enabled"`
+	BarcodeEnableTiffSupport *bool           `json:"barcode_enable_tiff_support"`
+	BarcodeString            *string         `json:"barcode_string"`
+	BarcodeRetainSplitPages  *bool           `json:"barcode_retain_split_pages"`
+	BarcodeEnableASN         *bool           `json:"barcode_enable_asn"`
+	BarcodeASNPrefix         *string         `json:"barcode_asn_prefix"`
+	BarcodeUpscale           *float64        `json:"barcode_upscale"`
+	BarcodeDPI               *int64          `json:"barcode_dpi"`
+	BarcodeMaxPages          *int64          `json:"barcode_max_pages"`
+	BarcodeEnableTag         *bool           `json:"barcode_enable_tag"`
+	BarcodeTagMapping        json.RawMessage `json:"barcode_tag_mapping"`
 }
