@@ -98,3 +98,33 @@ type ApplicationConfiguration struct {
 	BarcodeEnableTag         *bool           `json:"barcode_enable_tag"`
 	BarcodeTagMapping        json.RawMessage `json:"barcode_tag_mapping"`
 }
+
+// Correspondent represents a Paperless-NGX correspondent.
+type Correspondent struct {
+	ID                 int     `json:"id"`
+	Slug               string  `json:"slug"`
+	Name               string  `json:"name"`
+	Match              string  `json:"match"`
+	MatchingAlgorithm  int     `json:"matching_algorithm"`
+	IsInsensitive      bool    `json:"is_insensitive"`
+	DocumentCount      int     `json:"document_count"`
+	LastCorrespondence *string `json:"last_correspondence"`
+}
+
+// PaginatedList is a generic paginated API response.
+type PaginatedList[T any] struct {
+	Count    int     `json:"count"`
+	Next     *string `json:"next"`
+	Previous *string `json:"previous"`
+	All      []int   `json:"all"`
+	Results  []T     `json:"results"`
+}
+
+// CustomField represents a Paperless-NGX custom field definition.
+type CustomField struct {
+	ID            int             `json:"id"`
+	Name          string          `json:"name"`
+	DataType      string          `json:"data_type"`
+	ExtraData     json.RawMessage `json:"extra_data"`
+	DocumentCount int             `json:"document_count"`
+}

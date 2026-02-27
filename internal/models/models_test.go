@@ -319,6 +319,192 @@ func TestApplicationConfigurationUnmarshal(t *testing.T) {
 	}
 }
 
+func TestCorrespondentUnmarshal(t *testing.T) {
+	jsonData := `{
+		"id": 1,
+		"slug": "acme-corp",
+		"name": "ACME Corp",
+		"match": "acme",
+		"matching_algorithm": 1,
+		"is_insensitive": true,
+		"document_count": 5,
+		"last_correspondence": "2026-02-15T10:00:00Z"
+	}`
+
+	var c Correspondent
+	if err := json.Unmarshal([]byte(jsonData), &c); err != nil {
+		t.Fatalf("Failed to unmarshal Correspondent: %v", err)
+	}
+
+	if c.ID != 1 {
+		t.Errorf("ID = %d, want 1", c.ID)
+	}
+
+	if c.Name != "ACME Corp" {
+		t.Errorf("Name = %s, want ACME Corp", c.Name)
+	}
+
+	if c.Slug != "acme-corp" {
+		t.Errorf("Slug = %s, want acme-corp", c.Slug)
+	}
+
+	if c.Match != "acme" {
+		t.Errorf("Match = %s, want acme", c.Match)
+	}
+
+	if c.MatchingAlgorithm != 1 {
+		t.Errorf(
+			"MatchingAlgorithm = %d, want 1",
+			c.MatchingAlgorithm,
+		)
+	}
+
+	if !c.IsInsensitive {
+		t.Error("IsInsensitive = false, want true")
+	}
+
+	if c.DocumentCount != 5 {
+		t.Errorf("DocumentCount = %d, want 5", c.DocumentCount)
+	}
+
+	if c.LastCorrespondence == nil ||
+		*c.LastCorrespondence != "2026-02-15T10:00:00Z" {
+		t.Errorf(
+			"LastCorrespondence = %v, want 2026-02-15T10:00:00Z",
+			c.LastCorrespondence,
+		)
+	}
+}
+
+func TestCorrespondentUnmarshalNullLastCorrespondence(t *testing.T) {
+	jsonData := `{
+		"id": 2,
+		"slug": "john-doe",
+		"name": "John Doe",
+		"match": "",
+		"matching_algorithm": 6,
+		"is_insensitive": true,
+		"document_count": 0,
+		"last_correspondence": null
+	}`
+
+	var c Correspondent
+	if err := json.Unmarshal([]byte(jsonData), &c); err != nil {
+		t.Fatalf("Failed to unmarshal: %v", err)
+	}
+
+	if c.LastCorrespondence != nil {
+		t.Errorf(
+			"LastCorrespondence = %v, want nil",
+			c.LastCorrespondence,
+		)
+	}
+}
+
+func TestPaginatedListCorrespondentUnmarshal(t *testing.T) {
+	jsonData := `{
+		"count": 1,
+		"next": null,
+		"previous": null,
+		"all": [1],
+		"results": [{
+			"id": 1,
+			"slug": "acme-corp",
+			"name": "ACME Corp",
+			"match": "",
+			"matching_algorithm": 1,
+			"is_insensitive": true,
+			"document_count": 0
+		}]
+	}`
+
+	var list PaginatedList[Correspondent]
+	if err := json.Unmarshal([]byte(jsonData), &list); err != nil {
+		t.Fatalf("Failed to unmarshal: %v", err)
+	}
+
+	if list.Count != 1 {
+		t.Errorf("Count = %d, want 1", list.Count)
+	}
+
+	if list.Next != nil {
+		t.Errorf("Next = %v, want nil", list.Next)
+	}
+
+	if len(list.All) != 1 || list.All[0] != 1 {
+		t.Errorf("All = %v, want [1]", list.All)
+	}
+
+	if len(list.Results) != 1 {
+		t.Fatalf("Results len = %d, want 1", len(list.Results))
+	}
+
+	if list.Results[0].Name != "ACME Corp" {
+		t.Errorf(
+			"Results[0].Name = %s, want ACME Corp",
+			list.Results[0].Name,
+		)
+	}
+}
+
+func TestCustomFieldUnmarshal(t *testing.T) {
+	jsonData := `{
+		"id": 1,
+		"name": "Invoice Number",
+		"data_type": "string",
+		"extra_data": {"select_options": ["a", "b"]},
+		"document_count": 10
+	}`
+
+	var cf CustomField
+	if err := json.Unmarshal([]byte(jsonData), &cf); err != nil {
+		t.Fatalf("Failed to unmarshal CustomField: %v", err)
+	}
+
+	if cf.ID != 1 {
+		t.Errorf("ID = %d, want 1", cf.ID)
+	}
+
+	if cf.Name != "Invoice Number" {
+		t.Errorf("Name = %s, want Invoice Number", cf.Name)
+	}
+
+	if cf.DataType != "string" {
+		t.Errorf("DataType = %s, want string", cf.DataType)
+	}
+
+	if cf.DocumentCount != 10 {
+		t.Errorf("DocumentCount = %d, want 10", cf.DocumentCount)
+	}
+
+	if cf.ExtraData == nil ||
+		!strings.Contains(string(cf.ExtraData), "select_options") {
+		t.Errorf(
+			"ExtraData = %v, want JSON with select_options",
+			cf.ExtraData,
+		)
+	}
+}
+
+func TestCustomFieldUnmarshalNullExtraData(t *testing.T) {
+	jsonData := `{
+		"id": 2,
+		"name": "Due Date",
+		"data_type": "date",
+		"extra_data": null,
+		"document_count": 0
+	}`
+
+	var cf CustomField
+	if err := json.Unmarshal([]byte(jsonData), &cf); err != nil {
+		t.Fatalf("Failed to unmarshal: %v", err)
+	}
+
+	if string(cf.ExtraData) != "null" {
+		t.Errorf("ExtraData = %s, want null", string(cf.ExtraData))
+	}
+}
+
 func TestApplicationConfigurationUnmarshalAllNulls(t *testing.T) {
 	jsonData := `[{
 		"id": 1,
