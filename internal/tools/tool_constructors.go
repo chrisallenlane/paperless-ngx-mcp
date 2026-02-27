@@ -37,6 +37,58 @@ func NewGetNextASN(c *client.Client) Tool {
 	}
 }
 
+// NewGetConfig creates a tool to get the application
+// configuration.
+func NewGetConfig(c *client.Client) Tool {
+	return &noArgGetToolRaw{
+		client: c,
+		desc: "Get the current application " +
+			"configuration of the " +
+			"Paperless-NGX server",
+		path: "/api/config/",
+		process: func(body []byte) (string, error) {
+			var configs []models.ApplicationConfiguration
+			if err := json.Unmarshal(
+				body,
+				&configs,
+			); err != nil {
+				return "", fmt.Errorf(
+					"failed to parse response: %w",
+					err,
+				)
+			}
+			if len(configs) == 0 {
+				return "No configuration found.", nil
+			}
+			return formatConfig(&configs[0]), nil
+		},
+	}
+}
+
+// NewGetStatistics creates a tool to get document and resource
+// count statistics.
+func NewGetStatistics(c *client.Client) Tool {
+	return &noArgGetToolRaw{
+		client: c,
+		desc: "Get document and resource count " +
+			"statistics from Paperless-NGX",
+		path: "/api/statistics/",
+		process: func(body []byte) (string, error) {
+			var stats map[string]interface{}
+			if err := json.Unmarshal(
+				body,
+				&stats,
+			); err != nil {
+				return "", fmt.Errorf(
+					"failed to parse response: %w",
+					err,
+				)
+			}
+			return formatStatistics(stats), nil
+		},
+	}
+}
+
 // --- Get tools ---
 
 // NewGetCorrespondent creates a tool to get a correspondent by ID.

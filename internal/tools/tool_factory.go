@@ -45,6 +45,36 @@ func (t *noArgGetTool[T]) Execute(
 	return t.format(&result), nil
 }
 
+// noArgGetToolRaw is a data-driven GET tool with no input
+// parameters and custom response handling. Use this when the
+// response cannot be unmarshaled into a single typed struct
+// (e.g., JSON arrays, untyped maps).
+type noArgGetToolRaw struct {
+	client  *client.Client
+	desc    string
+	path    string
+	process func([]byte) (string, error)
+}
+
+func (t *noArgGetToolRaw) Description() string {
+	return t.desc
+}
+
+func (t *noArgGetToolRaw) InputSchema() map[string]interface{} {
+	return emptySchema()
+}
+
+func (t *noArgGetToolRaw) Execute(
+	ctx context.Context,
+	_ json.RawMessage,
+) (string, error) {
+	body, err := doAPIRequest(ctx, t.client, t.path)
+	if err != nil {
+		return "", err
+	}
+	return t.process(body)
+}
+
 // getTool is a data-driven GET-by-ID tool.
 type getTool[T any] struct {
 	client  *client.Client
