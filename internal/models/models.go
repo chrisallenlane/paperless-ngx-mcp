@@ -128,3 +128,14 @@ type CustomField struct {
 	ExtraData     json.RawMessage `json:"extra_data"`
 	DocumentCount int             `json:"document_count"`
 }
+
+// DocumentType represents a Paperless-NGX document type.
+type DocumentType struct {
+	ID                int    `json:"id"`
+	Slug              string `json:"slug"`
+	Name              string `json:"name"`
+	Match             string `json:"match"`
+	MatchingAlgorithm int    `json:"matching_algorithm"`
+	IsInsensitive     bool   `json:"is_insensitive"`
+	DocumentCount     int    `json:"document_count"`
+}
