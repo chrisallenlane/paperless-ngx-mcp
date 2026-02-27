@@ -406,7 +406,7 @@ func NewCreateSavedView(c *client.Client) Tool {
 	return &createTool[models.SavedView]{
 		client:   c,
 		desc:     "Create a new saved view in Paperless-NGX",
-		schema:   savedViewCreateSchema(),
+		schema:   savedViewSchema(false),
 		path:     "/api/saved_views/",
 		validate: validateCreateSavedView,
 		format:   formatSavedView,
@@ -604,7 +604,7 @@ func NewUpdateSavedView(c *client.Client) Tool {
 	return &patchTool[models.SavedView]{
 		client:  c,
 		desc:    "Update a saved view in Paperless-NGX",
-		schema:  savedViewUpdateSchema(),
+		schema:  savedViewSchema(true),
 		pathFmt: "/api/saved_views/%d/",
 		format:  formatSavedView,
 	}

@@ -553,33 +553,29 @@ func savedViewProps() map[string]interface{} {
 	}
 }
 
-// savedViewCreateSchema returns an input schema for creating
-// a saved view.
-func savedViewCreateSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"type":       "object",
-		"properties": savedViewProps(),
-		"required": []string{
+// savedViewSchema returns an input schema for saved view
+// tools. Set includeID to true for update tools, false for
+// create.
+func savedViewSchema(
+	includeID bool,
+) map[string]interface{} {
+	props := savedViewProps()
+
+	required := withIDForUpdate(
+		props,
+		"Saved view ID to update",
+		includeID,
+		[]string{
 			"name",
 			"show_on_dashboard",
 			"show_in_sidebar",
 			"filter_rules",
 		},
-	}
-}
-
-// savedViewUpdateSchema returns an input schema for updating
-// a saved view.
-func savedViewUpdateSchema() map[string]interface{} {
-	props := savedViewProps()
-	props["id"] = map[string]interface{}{
-		"type":        "integer",
-		"description": "Saved view ID to update",
-	}
+	)
 
 	return map[string]interface{}{
 		"type":       "object",
 		"properties": props,
-		"required":   []string{"id"},
+		"required":   required,
 	}
 }

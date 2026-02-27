@@ -6,21 +6,6 @@ import (
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/models"
 )
 
-func formatNote(note *models.Note) string {
-	out := fmt.Sprintf("Note (ID: %d)\n", note.ID)
-	out += fmt.Sprintf(
-		"  Author: %s\n",
-		note.User.Username,
-	)
-	out += fmt.Sprintf(
-		"  Created: %s\n",
-		formatDate(note.Created),
-	)
-	out += fmt.Sprintf("  Content: %s\n", note.Note)
-
-	return out
-}
-
 func formatNoteList(
 	docID int,
 	list *models.PaginatedList[models.Note],
