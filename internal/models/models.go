@@ -242,6 +242,25 @@ type BasicUser struct {
 	LastName  string `json:"last_name"`
 }
 
+// SavedView represents a saved document filter/sort configuration.
+type SavedView struct {
+	ID              int                   `json:"id"`
+	Name            string                `json:"name"`
+	ShowOnDashboard bool                  `json:"show_on_dashboard"`
+	ShowInSidebar   bool                  `json:"show_in_sidebar"`
+	SortField       *string               `json:"sort_field"`
+	SortReverse     bool                  `json:"sort_reverse"`
+	FilterRules     []SavedViewFilterRule `json:"filter_rules"`
+	PageSize        *int                  `json:"page_size"`
+	DisplayMode     *string               `json:"display_mode"`
+}
+
+// SavedViewFilterRule represents a filter rule in a saved view.
+type SavedViewFilterRule struct {
+	RuleType int     `json:"rule_type"`
+	Value    *string `json:"value"`
+}
+
 // DocumentSuggestions represents AI-generated suggestions for a document.
 type DocumentSuggestions struct {
 	Correspondents []int    `json:"correspondents"`

@@ -267,6 +267,35 @@ func NewDeleteStoragePath(c *client.Client) Tool {
 	}
 }
 
+// NewListSavedViews creates a tool to list saved views.
+func NewListSavedViews(c *client.Client) Tool {
+	return &listTool[models.SavedView]{
+		client: c,
+		desc: "List saved views in Paperless-NGX " +
+			"with optional pagination",
+		schema:   paginationOnlySchema(),
+		basePath: "/api/saved_views/",
+		format:   formatSavedViewList,
+	}
+}
+
+// NewGetSavedView creates a tool to get a saved view by ID.
+func NewGetSavedView(c *client.Client) Tool {
+	return &getTool[models.SavedView]{
+		client: c,
+		desc: "Get a saved view by ID " +
+			"from Paperless-NGX",
+		schema:  idOnlySchema("Saved view ID"),
+		pathFmt: "/api/saved_views/%d/",
+		format: func(
+			_ int,
+			v *models.SavedView,
+		) string {
+			return formatSavedView(v)
+		},
+	}
+}
+
 // NewListTrash creates a tool to list soft-deleted documents.
 func NewListTrash(c *client.Client) Tool {
 	return &listTool[models.Document]{
@@ -338,6 +367,17 @@ func NewUpdateDocumentType(c *client.Client) Tool {
 	}
 }
 
+// NewUpdateSavedView creates a tool to update a saved view.
+func NewUpdateSavedView(c *client.Client) Tool {
+	return &patchTool[models.SavedView]{
+		client:  c,
+		desc:    "Update a saved view in Paperless-NGX",
+		schema:  savedViewUpdateSchema(),
+		pathFmt: "/api/saved_views/%d/",
+		format:  formatSavedView,
+	}
+}
+
 // NewUpdateDocument creates a tool to update a document.
 func NewUpdateDocument(c *client.Client) Tool {
 	return &patchTool[models.Document]{
@@ -396,6 +436,20 @@ func NewDeleteDocumentType(c *client.Client) Tool {
 		),
 		pathFmt:      "/api/document_types/%d/",
 		resourceName: "Document type",
+	}
+}
+
+// NewDeleteSavedView creates a tool to delete a saved view.
+func NewDeleteSavedView(c *client.Client) Tool {
+	return &deleteTool{
+		client: c,
+		desc: "Delete a saved view " +
+			"from Paperless-NGX",
+		schema: idOnlySchema(
+			"Saved view ID to delete",
+		),
+		pathFmt:      "/api/saved_views/%d/",
+		resourceName: "Saved view",
 	}
 }
 
