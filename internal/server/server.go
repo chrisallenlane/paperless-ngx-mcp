@@ -91,6 +91,33 @@ func (s *Server) registerTools() {
 	s.tools["delete_document_type"] = tools.NewDeleteDocumentType(
 		s.client,
 	)
+	s.tools["list_documents"] = tools.NewListDocuments(
+		s.client,
+	)
+	s.tools["get_document"] = tools.NewGetDocument(
+		s.client,
+	)
+	s.tools["update_document"] = tools.NewUpdateDocument(
+		s.client,
+	)
+	s.tools["delete_document"] = tools.NewDeleteDocument(
+		s.client,
+	)
+	s.tools["get_document_metadata"] = tools.NewGetDocumentMetadata(
+		s.client,
+	)
+	s.tools["get_document_suggestions"] = tools.NewGetDocumentSuggestions(
+		s.client,
+	)
+	s.tools["get_next_asn"] = tools.NewGetNextASN(
+		s.client,
+	)
+	s.tools["upload_document"] = tools.NewUploadDocument(
+		s.client,
+	)
+	s.tools["download_document"] = tools.NewDownloadDocument(
+		s.client,
+	)
 }
 
 // Run starts the MCP server and processes requests

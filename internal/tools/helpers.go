@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path/filepath"
+	"strings"
 
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
 )
@@ -245,6 +247,26 @@ func buildListPath(
 		return basePath + "?" + encoded, nil
 	}
 	return basePath, nil
+}
+
+// validateFilePath checks that a file path is safe and absolute.
+func validateFilePath(path string) error {
+	cleaned := filepath.Clean(path)
+	if !filepath.IsAbs(cleaned) {
+		return fmt.Errorf(
+			"file path must be absolute: %s",
+			path,
+		)
+	}
+
+	if strings.Contains(cleaned, "..") {
+		return fmt.Errorf(
+			"file path must not contain '..': %s",
+			path,
+		)
+	}
+
+	return nil
 }
 
 // readResponse reads and validates an HTTP response, returning the body bytes.

@@ -139,3 +139,55 @@ type DocumentType struct {
 	IsInsensitive     bool   `json:"is_insensitive"`
 	DocumentCount     int    `json:"document_count"`
 }
+
+// Document represents a Paperless-NGX document.
+type Document struct {
+	ID                  int                   `json:"id"`
+	Title               string                `json:"title"`
+	Content             string                `json:"content"`
+	Correspondent       *int                  `json:"correspondent"`
+	DocumentType        *int                  `json:"document_type"`
+	StoragePath         *int                  `json:"storage_path"`
+	Tags                []int                 `json:"tags"`
+	Created             string                `json:"created"`
+	CreatedDate         string                `json:"created_date"`
+	Added               string                `json:"added"`
+	Modified            string                `json:"modified"`
+	ArchiveSerialNumber *int                  `json:"archive_serial_number"`
+	OriginalFileName    *string               `json:"original_file_name"`
+	ArchivedFileName    *string               `json:"archived_file_name"`
+	MimeType            string                `json:"mime_type"`
+	PageCount           *int                  `json:"page_count"`
+	CustomFields        []CustomFieldInstance `json:"custom_fields"`
+}
+
+// CustomFieldInstance represents a custom field value assigned to a document.
+type CustomFieldInstance struct {
+	Field int             `json:"field"`
+	Value json.RawMessage `json:"value"`
+}
+
+// DocumentMetadata represents metadata for a document's files.
+type DocumentMetadata struct {
+	OriginalChecksum     string      `json:"original_checksum"`
+	OriginalSize         int         `json:"original_size"`
+	OriginalMimeType     string      `json:"original_mime_type"`
+	MediaFilename        string      `json:"media_filename"`
+	OriginalFilename     string      `json:"original_filename"`
+	OriginalMetadata     interface{} `json:"original_metadata"`
+	ArchiveChecksum      string      `json:"archive_checksum"`
+	ArchiveSize          int         `json:"archive_size"`
+	ArchiveMediaFilename string      `json:"archive_media_filename"`
+	ArchiveMetadata      interface{} `json:"archive_metadata"`
+	HasArchiveVersion    bool        `json:"has_archive_version"`
+	Lang                 string      `json:"lang"`
+}
+
+// DocumentSuggestions represents AI-generated suggestions for a document.
+type DocumentSuggestions struct {
+	Correspondents []int    `json:"correspondents"`
+	DocumentTypes  []int    `json:"document_types"`
+	StoragePaths   []int    `json:"storage_paths"`
+	Tags           []int    `json:"tags"`
+	Dates          []string `json:"dates"`
+}

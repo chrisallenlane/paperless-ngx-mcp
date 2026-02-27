@@ -3,6 +3,7 @@ package tools
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/models"
 )
@@ -150,16 +151,24 @@ func formatOptJSON(label string, v json.RawMessage) string {
 	return fmt.Sprintf("%s: (default)\n", label)
 }
 
-func formatCorrespondent(c *models.Correspondent) string {
-	algoName := matchingAlgorithmNames[c.MatchingAlgorithm]
-	if algoName == "" {
-		algoName = "Unknown"
+func matchingAlgorithmName(algo int) string {
+	name := matchingAlgorithmNames[algo]
+	if name == "" {
+		return "Unknown"
 	}
+	return name
+}
 
-	matchDisplay := c.Match
-	if matchDisplay == "" {
-		matchDisplay = "(none)"
+func matchDisplayOrDefault(match string) string {
+	if match == "" {
+		return "(none)"
 	}
+	return match
+}
+
+func formatCorrespondent(c *models.Correspondent) string {
+	algoName := matchingAlgorithmName(c.MatchingAlgorithm)
+	matchDisplay := matchDisplayOrDefault(c.Match)
 
 	lastCorr := "(none)"
 	if c.LastCorrespondence != nil {
@@ -249,15 +258,8 @@ func formatCustomFieldList(
 }
 
 func formatDocumentType(dt *models.DocumentType) string {
-	algoName := matchingAlgorithmNames[dt.MatchingAlgorithm]
-	if algoName == "" {
-		algoName = "Unknown"
-	}
-
-	matchDisplay := dt.Match
-	if matchDisplay == "" {
-		matchDisplay = "(none)"
-	}
+	algoName := matchingAlgorithmName(dt.MatchingAlgorithm)
+	matchDisplay := matchDisplayOrDefault(dt.Match)
 
 	out := fmt.Sprintf("Document Type (ID: %d)\n", dt.ID)
 	out += fmt.Sprintf("  Name: %s\n", dt.Name)
@@ -300,4 +302,223 @@ func formatDocumentTypeList(
 	}
 
 	return out
+}
+
+func formatDocument(d *models.Document) string {
+	out := fmt.Sprintf("Document (ID: %d)\n", d.ID)
+	out += fmt.Sprintf("  Title: %s\n", d.Title)
+	out += fmt.Sprintf(
+		"  Correspondent: %s\n",
+		formatOptInt(d.Correspondent),
+	)
+	out += fmt.Sprintf(
+		"  Document Type: %s\n",
+		formatOptInt(d.DocumentType),
+	)
+	out += fmt.Sprintf(
+		"  Storage Path: %s\n",
+		formatOptInt(d.StoragePath),
+	)
+
+	out += fmt.Sprintf("  Tags: %s\n", formatIntSlice(d.Tags))
+
+	out += fmt.Sprintf("  Created: %s\n", formatDate(d.Created))
+	out += fmt.Sprintf("  Added: %s\n", formatDate(d.Added))
+	out += fmt.Sprintf("  Modified: %s\n", formatDate(d.Modified))
+	out += fmt.Sprintf(
+		"  ASN: %s\n",
+		formatOptInt(d.ArchiveSerialNumber),
+	)
+	out += fmt.Sprintf(
+		"  Original File: %s\n",
+		formatOptStr(d.OriginalFileName),
+	)
+	out += fmt.Sprintf(
+		"  Archived File: %s\n",
+		formatOptStr(d.ArchivedFileName),
+	)
+	out += fmt.Sprintf("  MIME Type: %s\n", d.MimeType)
+	out += fmt.Sprintf(
+		"  Page Count: %s\n",
+		formatOptInt(d.PageCount),
+	)
+
+	if len(d.CustomFields) > 0 {
+		out += "  Custom Fields:\n"
+		for _, cf := range d.CustomFields {
+			out += fmt.Sprintf(
+				"    Field %d: %s\n",
+				cf.Field,
+				string(cf.Value),
+			)
+		}
+	}
+
+	contentPreview := d.Content
+	if len(contentPreview) > 500 {
+		contentPreview = contentPreview[:500] + "..."
+	}
+	if contentPreview != "" {
+		out += fmt.Sprintf("  Content: %s\n", contentPreview)
+	}
+
+	return out
+}
+
+func formatDocumentList(
+	list *models.PaginatedList[models.Document],
+) string {
+	if list.Count == 0 {
+		return "No documents found."
+	}
+
+	out := fmt.Sprintf("Documents: %d total\n\n", list.Count)
+	for _, d := range list.Results {
+		corr := formatOptInt(d.Correspondent)
+		docType := formatOptInt(d.DocumentType)
+		asn := formatOptInt(d.ArchiveSerialNumber)
+
+		out += fmt.Sprintf(
+			"%d. %s (ID: %d)\n",
+			d.ID,
+			d.Title,
+			d.ID,
+		)
+		out += fmt.Sprintf(
+			"   Correspondent: %s | Type: %s | "+
+				"ASN: %s | Created: %s\n",
+			corr,
+			docType,
+			asn,
+			formatDate(d.Created),
+		)
+	}
+
+	if list.Next != nil {
+		out += "\n(more results available — use page parameter)"
+	}
+
+	return out
+}
+
+func formatOptInt(v *int) string {
+	if v != nil {
+		return fmt.Sprintf("%d", *v)
+	}
+	return "(none)"
+}
+
+func formatOptStr(v *string) string {
+	if v != nil && *v != "" {
+		return *v
+	}
+	return "(none)"
+}
+
+func formatDocumentMetadata(
+	id int,
+	m *models.DocumentMetadata,
+) string {
+	out := fmt.Sprintf("Document Metadata (ID: %d)\n", id)
+
+	out += "\nOriginal File:\n"
+	out += fmt.Sprintf("  Filename: %s\n", m.OriginalFilename)
+	out += fmt.Sprintf("  MIME Type: %s\n", m.OriginalMimeType)
+	out += fmt.Sprintf("  Size: %s\n", formatFileSize(m.OriginalSize))
+	out += fmt.Sprintf("  Checksum: %s\n", m.OriginalChecksum)
+
+	out += "\nArchive File:\n"
+	out += fmt.Sprintf(
+		"  Has Archive Version: %v\n",
+		m.HasArchiveVersion,
+	)
+	if m.HasArchiveVersion {
+		out += fmt.Sprintf(
+			"  Filename: %s\n",
+			m.ArchiveMediaFilename,
+		)
+		out += fmt.Sprintf(
+			"  Size: %s\n",
+			formatFileSize(m.ArchiveSize),
+		)
+		out += fmt.Sprintf(
+			"  Checksum: %s\n",
+			m.ArchiveChecksum,
+		)
+	}
+
+	out += fmt.Sprintf(
+		"\nMedia Filename: %s\n",
+		m.MediaFilename,
+	)
+	out += fmt.Sprintf("OCR Language: %s\n", m.Lang)
+
+	return out
+}
+
+func formatFileSize(bytes int) string {
+	const (
+		kb = 1024
+		mb = kb * 1024
+		gb = mb * 1024
+	)
+
+	switch {
+	case bytes >= gb:
+		return fmt.Sprintf("%.2f GB", float64(bytes)/float64(gb))
+	case bytes >= mb:
+		return fmt.Sprintf("%.2f MB", float64(bytes)/float64(mb))
+	case bytes >= kb:
+		return fmt.Sprintf("%.2f KB", float64(bytes)/float64(kb))
+	default:
+		return fmt.Sprintf("%d bytes", bytes)
+	}
+}
+
+func formatDocumentSuggestions(
+	id int,
+	s *models.DocumentSuggestions,
+) string {
+	out := fmt.Sprintf("Document Suggestions (ID: %d)\n", id)
+
+	out += fmt.Sprintf(
+		"  Correspondents: %s\n",
+		formatIntSlice(s.Correspondents),
+	)
+	out += fmt.Sprintf(
+		"  Document Types: %s\n",
+		formatIntSlice(s.DocumentTypes),
+	)
+	out += fmt.Sprintf(
+		"  Storage Paths: %s\n",
+		formatIntSlice(s.StoragePaths),
+	)
+	out += fmt.Sprintf(
+		"  Tags: %s\n",
+		formatIntSlice(s.Tags),
+	)
+	out += fmt.Sprintf(
+		"  Dates: %s\n",
+		formatStringSlice(s.Dates),
+	)
+
+	return out
+}
+
+func formatIntSlice(ids []int) string {
+	if len(ids) == 0 {
+		return "(none)"
+	}
+	strs := make([]string, len(ids))
+	for i, id := range ids {
+		strs[i] = fmt.Sprintf("%d", id)
+	}
+	return strings.Join(strs, ", ")
+}
+
+func formatStringSlice(items []string) string {
+	if len(items) == 0 {
+		return "(none)"
+	}
+	return strings.Join(items, ", ")
 }

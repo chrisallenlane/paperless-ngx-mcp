@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -194,5 +195,56 @@ func TestDelete(t *testing.T) {
 
 	if resp.StatusCode != http.StatusNoContent {
 		t.Errorf("Expected 204, got %d", resp.StatusCode)
+	}
+}
+
+func TestPostMultipart(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != "POST" {
+				t.Errorf("Expected POST, got %s", r.Method)
+			}
+
+			contentType := r.Header.Get("Content-Type")
+			if !strings.HasPrefix(
+				contentType,
+				"multipart/form-data",
+			) {
+				t.Errorf(
+					"Expected multipart/form-data, got %s",
+					contentType,
+				)
+			}
+
+			authHeader := r.Header.Get("Authorization")
+			if authHeader != "Token token" {
+				t.Errorf(
+					"Expected Authorization header, got %q",
+					authHeader,
+				)
+			}
+
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`"task-id"`))
+		}),
+	)
+	defer server.Close()
+
+	c := NewWithHTTPClient(server.URL, "token", server.Client())
+
+	body := strings.NewReader("fake multipart content")
+	resp, err := c.PostMultipart(
+		context.Background(),
+		"/test/upload",
+		body,
+		"multipart/form-data; boundary=test",
+	)
+	if err != nil {
+		t.Fatalf("PostMultipart failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected 200, got %d", resp.StatusCode)
 	}
 }
