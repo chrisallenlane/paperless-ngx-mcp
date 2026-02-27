@@ -22,7 +22,7 @@ func doAPIRequest(
 	if err != nil {
 		return nil, err
 	}
-	return readResponse(resp)
+	return readResponse(resp, http.StatusOK)
 }
 
 // doPatchRequest performs a PATCH API request and returns the response body.
@@ -36,11 +36,42 @@ func doPatchRequest(
 	if err != nil {
 		return nil, err
 	}
-	return readResponse(resp)
+	return readResponse(resp, http.StatusOK)
+}
+
+// doPostRequest performs a POST API request and returns the response body.
+func doPostRequest(
+	ctx context.Context,
+	c *client.Client,
+	path string,
+	body interface{},
+) ([]byte, error) {
+	resp, err := c.Post(ctx, path, body)
+	if err != nil {
+		return nil, err
+	}
+	return readResponse(resp, http.StatusCreated)
+}
+
+// doDeleteRequest performs a DELETE API request.
+func doDeleteRequest(
+	ctx context.Context,
+	c *client.Client,
+	path string,
+) error {
+	resp, err := c.Delete(ctx, path)
+	if err != nil {
+		return err
+	}
+	_, err = readResponse(resp, http.StatusNoContent)
+	return err
 }
 
 // readResponse reads and validates an HTTP response, returning the body bytes.
-func readResponse(resp *http.Response) ([]byte, error) {
+func readResponse(
+	resp *http.Response,
+	expectedStatus int,
+) ([]byte, error) {
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -48,7 +79,7 @@ func readResponse(resp *http.Response) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != expectedStatus {
 		return nil, fmt.Errorf(
 			"unexpected status code %d: %s",
 			resp.StatusCode,

@@ -46,6 +46,21 @@ func (s *Server) registerTools() {
 	s.tools["get_status"] = tools.NewGetStatus(s.client)
 	s.tools["get_config"] = tools.NewGetConfig(s.client)
 	s.tools["update_config"] = tools.NewUpdateConfig(s.client)
+	s.tools["list_correspondents"] = tools.NewListCorrespondents(
+		s.client,
+	)
+	s.tools["get_correspondent"] = tools.NewGetCorrespondent(
+		s.client,
+	)
+	s.tools["create_correspondent"] = tools.NewCreateCorrespondent(
+		s.client,
+	)
+	s.tools["update_correspondent"] = tools.NewUpdateCorrespondent(
+		s.client,
+	)
+	s.tools["delete_correspondent"] = tools.NewDeleteCorrespondent(
+		s.client,
+	)
 }
 
 // Run starts the MCP server and processes requests
