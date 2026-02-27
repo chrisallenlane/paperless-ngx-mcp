@@ -241,50 +241,6 @@ func listResources[T any](
 	return &list, nil
 }
 
-// createMatchable creates a matchable resource (correspondent, document type).
-func createMatchable[T any](
-	ctx context.Context,
-	c *client.Client,
-	args json.RawMessage,
-	path string,
-) (*T, error) {
-	var params matchableCreateParams
-	if err := json.Unmarshal(args, &params); err != nil {
-		return nil, fmt.Errorf(
-			"failed to parse arguments: %w",
-			err,
-		)
-	}
-
-	if params.Name == "" {
-		return nil, fmt.Errorf("name is required")
-	}
-
-	body, err := doPostRequest(ctx, c, path, params)
-	if err != nil {
-		return nil, err
-	}
-
-	var result T
-	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, fmt.Errorf(
-			"failed to parse response: %w",
-			err,
-		)
-	}
-
-	return &result, nil
-}
-
-// matchableCreateParams holds common parameters for creating matchable
-// resources (correspondents, document types).
-type matchableCreateParams struct {
-	Name              string `json:"name"`
-	Match             string `json:"match,omitempty"`
-	MatchingAlgorithm *int   `json:"matching_algorithm,omitempty"`
-	IsInsensitive     *bool  `json:"is_insensitive,omitempty"`
-}
-
 // listParams holds common pagination and filter parameters.
 type listParams struct {
 	Page     *int    `json:"page"`

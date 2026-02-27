@@ -150,39 +150,52 @@ func (t *patchTool[T]) Execute(
 	return t.format(result), nil
 }
 
-// createMatchableTool is a data-driven CREATE tool for matchable
-// resources.
-type createMatchableTool[T any] struct {
-	client *client.Client
-	desc   string
-	schema map[string]interface{}
-	path   string
-	format func(*T) string
+// createTool is a data-driven POST tool for creating resources.
+type createTool[T any] struct {
+	client   *client.Client
+	desc     string
+	schema   map[string]interface{}
+	path     string
+	validate func(json.RawMessage) (interface{}, error)
+	format   func(*T) string
 }
 
-func (t *createMatchableTool[T]) Description() string {
+func (t *createTool[T]) Description() string {
 	return t.desc
 }
 
-func (t *createMatchableTool[T]) InputSchema() map[string]interface{} {
+func (t *createTool[T]) InputSchema() map[string]interface{} {
 	return t.schema
 }
 
-func (t *createMatchableTool[T]) Execute(
+func (t *createTool[T]) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	result, err := createMatchable[T](
+	reqBody, err := t.validate(args)
+	if err != nil {
+		return "", err
+	}
+
+	body, err := doPostRequest(
 		ctx,
 		t.client,
-		args,
 		t.path,
+		reqBody,
 	)
 	if err != nil {
 		return "", err
 	}
 
-	return t.format(result), nil
+	var result T
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf(
+			"failed to parse response: %w",
+			err,
+		)
+	}
+
+	return t.format(&result), nil
 }
 
 // deleteTool is a data-driven DELETE-by-ID tool.
