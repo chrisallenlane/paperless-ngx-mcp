@@ -151,16 +151,24 @@ func formatOptJSON(label string, v json.RawMessage) string {
 	return fmt.Sprintf("%s: (default)\n", label)
 }
 
-func formatCorrespondent(c *models.Correspondent) string {
-	algoName := matchingAlgorithmNames[c.MatchingAlgorithm]
-	if algoName == "" {
-		algoName = "Unknown"
+func matchingAlgorithmName(algo int) string {
+	name := matchingAlgorithmNames[algo]
+	if name == "" {
+		return "Unknown"
 	}
+	return name
+}
 
-	matchDisplay := c.Match
-	if matchDisplay == "" {
-		matchDisplay = "(none)"
+func matchDisplayOrDefault(match string) string {
+	if match == "" {
+		return "(none)"
 	}
+	return match
+}
+
+func formatCorrespondent(c *models.Correspondent) string {
+	algoName := matchingAlgorithmName(c.MatchingAlgorithm)
+	matchDisplay := matchDisplayOrDefault(c.Match)
 
 	lastCorr := "(none)"
 	if c.LastCorrespondence != nil {
@@ -250,15 +258,8 @@ func formatCustomFieldList(
 }
 
 func formatDocumentType(dt *models.DocumentType) string {
-	algoName := matchingAlgorithmNames[dt.MatchingAlgorithm]
-	if algoName == "" {
-		algoName = "Unknown"
-	}
-
-	matchDisplay := dt.Match
-	if matchDisplay == "" {
-		matchDisplay = "(none)"
-	}
+	algoName := matchingAlgorithmName(dt.MatchingAlgorithm)
+	matchDisplay := matchDisplayOrDefault(dt.Match)
 
 	out := fmt.Sprintf("Document Type (ID: %d)\n", dt.ID)
 	out += fmt.Sprintf("  Name: %s\n", dt.Name)
@@ -319,18 +320,7 @@ func formatDocument(d *models.Document) string {
 		formatOptInt(d.StoragePath),
 	)
 
-	if len(d.Tags) > 0 {
-		tagStrs := make([]string, len(d.Tags))
-		for i, t := range d.Tags {
-			tagStrs[i] = fmt.Sprintf("%d", t)
-		}
-		out += fmt.Sprintf(
-			"  Tags: %s\n",
-			strings.Join(tagStrs, ", "),
-		)
-	} else {
-		out += "  Tags: (none)\n"
-	}
+	out += fmt.Sprintf("  Tags: %s\n", formatIntSlice(d.Tags))
 
 	out += fmt.Sprintf("  Created: %s\n", formatDate(d.Created))
 	out += fmt.Sprintf("  Added: %s\n", formatDate(d.Added))

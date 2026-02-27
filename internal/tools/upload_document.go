@@ -212,21 +212,11 @@ func (t *UploadDocument) Execute(
 			err,
 		)
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
+	body, err := readResponse(resp, http.StatusOK)
 	if err != nil {
 		return "", fmt.Errorf(
-			"failed to read response: %w",
+			"failed to upload document: %w",
 			err,
-		)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf(
-			"upload failed with status %d: %s",
-			resp.StatusCode,
-			string(body),
 		)
 	}
 
