@@ -45,6 +45,7 @@ func New(c *client.Client) *Server {
 func (s *Server) registerTools() {
 	s.tools["get_status"] = tools.NewGetStatus(s.client)
 	s.tools["get_config"] = tools.NewGetConfig(s.client)
+	s.tools["update_config"] = tools.NewUpdateConfig(s.client)
 }
 
 // Run starts the MCP server and processes requests
