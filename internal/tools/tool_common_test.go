@@ -366,6 +366,37 @@ var allToolTests = []toolTestEntry{
 		required:   []string{"id"},
 	},
 
+	// Document note tools
+	{
+		name: "ListDocumentNotes",
+		newTool: func(c *client.Client) Tool {
+			return NewListDocumentNotes(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "CreateDocumentNote",
+		newTool: func(c *client.Client) Tool {
+			return NewCreateDocumentNote(c)
+		},
+		serverArgs: `{"id": 1, "note": "Test"}`,
+		idArgsFmt:  `{"id": %d, "note": "Test"}`,
+		required:   []string{"id", "note"},
+	},
+	{
+		name: "DeleteDocumentNote",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteDocumentNote(c)
+		},
+		serverArgs: `{"document_id": 1, "note_id": 1}`,
+		required: []string{
+			"document_id",
+			"note_id",
+		},
+	},
+
 	// Special tools (Description + InputSchema only)
 	{
 		name: "UploadDocument",

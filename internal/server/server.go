@@ -148,6 +148,15 @@ func (s *Server) registerTools() {
 	s.tools["delete_storage_path"] = tools.NewDeleteStoragePath(
 		s.client,
 	)
+	s.tools["list_document_notes"] = tools.NewListDocumentNotes(
+		s.client,
+	)
+	s.tools["create_document_note"] = tools.NewCreateDocumentNote(
+		s.client,
+	)
+	s.tools["delete_document_note"] = tools.NewDeleteDocumentNote(
+		s.client,
+	)
 	s.tools["get_statistics"] = tools.NewGetStatistics(
 		s.client,
 	)
