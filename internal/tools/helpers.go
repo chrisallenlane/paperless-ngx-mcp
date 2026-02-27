@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
+	"github.com/chrisallenlane/paperless-ngx-mcp/internal/models"
 )
 
 // doAPIRequest performs a GET API request and returns the response body.
@@ -122,85 +123,157 @@ func parsePatchArgs(
 	return id, patchBody, nil
 }
 
-// idOnlySchema returns an input schema with a single required "id" field.
-func idOnlySchema(desc string) map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"id": map[string]interface{}{
-				"type":        "integer",
-				"description": desc,
-			},
-		},
-		"required": []string{"id"},
-	}
-}
-
-// paginatedListSchema returns an input schema for paginated list endpoints.
-func paginatedListSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"page": map[string]interface{}{
-				"type":        "integer",
-				"description": "Page number (default 1)",
-			},
-			"page_size": map[string]interface{}{
-				"type":        "integer",
-				"description": "Results per page (default 25)",
-			},
-			"name": map[string]interface{}{
-				"type": "string",
-				"description": "Filter by name " +
-					"(case-insensitive contains)",
-			},
-		},
-	}
-}
-
-// matchableResourceSchema returns an input schema for resources with matching
-// fields (name, match, matching_algorithm, is_insensitive). Set includeID
-// to true for update tools, false for create tools.
-func matchableResourceSchema(
+// deleteByID parses an ID from args and performs a DELETE request.
+func deleteByID(
+	ctx context.Context,
+	c *client.Client,
+	args json.RawMessage,
+	pathFmt string,
 	resourceName string,
-	includeID bool,
-) map[string]interface{} {
-	props := map[string]interface{}{
-		"name": map[string]interface{}{
-			"type":        "string",
-			"description": resourceName + " name",
-		},
-		"match": map[string]interface{}{
-			"type":        "string",
-			"description": "Match pattern for auto-assignment",
-		},
-		"matching_algorithm": map[string]interface{}{
-			"type": "integer",
-			"description": "Matching algorithm: " +
-				"0=None, 1=Any word, 2=All words, " +
-				"3=Exact match, 4=Regex, " +
-				"5=Fuzzy word, 6=Automatic",
-		},
-		"is_insensitive": map[string]interface{}{
-			"type":        "boolean",
-			"description": "Case-insensitive matching",
-		},
+) (string, error) {
+	id, err := parseIDArg(args)
+	if err != nil {
+		return "", err
 	}
 
-	required := []string{"name"}
-	if includeID {
-		props["id"] = map[string]interface{}{
-			"type":        "integer",
-			"description": resourceName + " ID to update",
-		}
-		required = []string{"id"}
+	path := fmt.Sprintf(pathFmt, id)
+
+	if err := doDeleteRequest(ctx, c, path); err != nil {
+		return "", fmt.Errorf(
+			"failed to delete %s: %w",
+			resourceName,
+			err,
+		)
 	}
 
-	return map[string]interface{}{
-		"type":       "object",
-		"properties": props,
-		"required":   required,
+	return fmt.Sprintf(
+		"%s %d deleted successfully.",
+		resourceName,
+		id,
+	), nil
+}
+
+// fetchByID parses an ID, fetches a resource, and unmarshals the response.
+func fetchByID[T any](
+	ctx context.Context,
+	c *client.Client,
+	args json.RawMessage,
+	pathFmt string,
+) (*T, int, error) {
+	id, err := parseIDArg(args)
+	if err != nil {
+		return nil, 0, err
 	}
+
+	path := fmt.Sprintf(pathFmt, id)
+
+	body, err := doAPIRequest(ctx, c, path)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var result T
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, 0, fmt.Errorf(
+			"failed to parse response: %w",
+			err,
+		)
+	}
+
+	return &result, id, nil
+}
+
+// patchByID parses patch args, performs a PATCH, and unmarshals the response.
+func patchByID[T any](
+	ctx context.Context,
+	c *client.Client,
+	args json.RawMessage,
+	pathFmt string,
+) (*T, error) {
+	id, patchBody, err := parsePatchArgs(args)
+	if err != nil {
+		return nil, err
+	}
+
+	path := fmt.Sprintf(pathFmt, id)
+
+	body, err := doPatchRequest(ctx, c, path, patchBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var result T
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf(
+			"failed to parse response: %w",
+			err,
+		)
+	}
+
+	return &result, nil
+}
+
+// listResources builds a list path, fetches, and unmarshals a paginated list.
+func listResources[T any](
+	ctx context.Context,
+	c *client.Client,
+	basePath string,
+	args json.RawMessage,
+) (*models.PaginatedList[T], error) {
+	path, err := buildListPath(basePath, args)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := doAPIRequest(ctx, c, path)
+	if err != nil {
+		return nil, err
+	}
+
+	var list models.PaginatedList[T]
+	if err := json.Unmarshal(body, &list); err != nil {
+		return nil, fmt.Errorf(
+			"failed to parse response: %w",
+			err,
+		)
+	}
+
+	return &list, nil
+}
+
+// createMatchable creates a matchable resource (correspondent, document type).
+func createMatchable[T any](
+	ctx context.Context,
+	c *client.Client,
+	args json.RawMessage,
+	path string,
+) (*T, error) {
+	var params matchableCreateParams
+	if err := json.Unmarshal(args, &params); err != nil {
+		return nil, fmt.Errorf(
+			"failed to parse arguments: %w",
+			err,
+		)
+	}
+
+	if params.Name == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+
+	body, err := doPostRequest(ctx, c, path, params)
+	if err != nil {
+		return nil, err
+	}
+
+	var result T
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf(
+			"failed to parse response: %w",
+			err,
+		)
+	}
+
+	return &result, nil
 }
 
 // matchableCreateParams holds common parameters for creating matchable

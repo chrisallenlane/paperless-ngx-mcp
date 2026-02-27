@@ -34,63 +34,35 @@ paperless-ngx-mcp/
 │   │   └── types.go           # JSON-RPC request/response types
 │   └── tools/                           # MCP tool implementations
 │       ├── tool.go                      # Tool interface definition
-│       ├── helpers.go                   # Shared utility functions
+│       ├── tool_factory.go              # Generic data-driven tool types
+│       ├── tool_constructors.go         # Constructor functions for all tools
+│       ├── helpers.go                   # Shared utility/HTTP helper functions
 │       ├── helpers_test.go              # Helper function tests
+│       ├── schemas.go                   # JSON schema builder functions
 │       ├── formatters.go                # All response formatting functions
-│       ├── get_status.go                # System status tool
-│       ├── get_status_test.go           # Status tool tests
-│       ├── get_config.go                # Application config tool
+│       ├── get_config.go                # Application config tool (array response)
 │       ├── get_config_test.go           # Config tool tests
-│       ├── update_config.go             # Config update tool
-│       ├── update_config_test.go        # Config update tests
-│       ├── list_correspondents.go       # List correspondents tool
-│       ├── list_correspondents_test.go  # List correspondents tests
-│       ├── get_correspondent.go         # Get correspondent tool
-│       ├── get_correspondent_test.go    # Get correspondent tests
-│       ├── create_correspondent.go      # Create correspondent tool
-│       ├── create_correspondent_test.go # Create correspondent tests
-│       ├── update_correspondent.go      # Update correspondent tool
-│       ├── update_correspondent_test.go # Update correspondent tests
-│       ├── delete_correspondent.go      # Delete correspondent tool
-│       ├── delete_correspondent_test.go # Delete correspondent tests
-│       ├── list_custom_fields.go        # List custom fields tool
-│       ├── list_custom_fields_test.go   # List custom fields tests
-│       ├── get_custom_field.go          # Get custom field tool
-│       ├── get_custom_field_test.go     # Get custom field tests
+│       ├── list_documents.go            # List documents tool (custom filters)
+│       ├── list_documents_test.go       # List documents tests
 │       ├── create_custom_field.go       # Create custom field tool
 │       ├── create_custom_field_test.go  # Create custom field tests
-│       ├── update_custom_field.go       # Update custom field tool
-│       ├── update_custom_field_test.go  # Update custom field tests
-│       ├── delete_custom_field.go       # Delete custom field tool
-│       ├── delete_custom_field_test.go  # Delete custom field tests
-│       ├── list_document_types.go       # List document types tool
-│       ├── list_document_types_test.go  # List document types tests
-│       ├── get_document_type.go         # Get document type tool
-│       ├── get_document_type_test.go    # Get document type tests
-│       ├── create_document_type.go      # Create document type tool
-│       ├── create_document_type_test.go # Create document type tests
-│       ├── update_document_type.go      # Update document type tool
-│       ├── update_document_type_test.go # Update document type tests
-│       ├── delete_document_type.go      # Delete document type tool
-│       ├── delete_document_type_test.go # Delete document type tests
-│       ├── list_documents.go            # List documents tool
-│       ├── list_documents_test.go       # List documents tests
-│       ├── get_document.go              # Get document tool
-│       ├── get_document_test.go         # Get document tests
-│       ├── update_document.go           # Update document tool
-│       ├── update_document_test.go      # Update document tests
-│       ├── delete_document.go           # Delete document tool
-│       ├── delete_document_test.go      # Delete document tests
-│       ├── get_document_metadata.go     # Get document metadata tool
-│       ├── get_document_metadata_test.go # Get document metadata tests
-│       ├── get_document_suggestions.go  # Get document suggestions tool
-│       ├── get_document_suggestions_test.go # Get document suggestions tests
-│       ├── get_next_asn.go              # Get next ASN tool
-│       ├── get_next_asn_test.go         # Get next ASN tests
 │       ├── upload_document.go           # Upload document tool
 │       ├── upload_document_test.go      # Upload document tests
 │       ├── download_document.go         # Download document tool
-│       └── download_document_test.go    # Download document tests
+│       ├── download_document_test.go    # Download document tests
+│       ├── tool_common_test.go          # Cross-cutting tests (description, schema)
+│       ├── delete_test.go               # Delete tool tests
+│       ├── get_correspondent_test.go    # Get correspondent tests
+│       ├── get_custom_field_test.go     # Get custom field tests
+│       ├── get_document_metadata_test.go # Get document metadata tests
+│       ├── get_document_suggestions_test.go # Get document suggestions tests
+│       ├── get_document_test.go         # Get document tests
+│       ├── get_document_type_test.go    # Get document type tests
+│       ├── get_next_asn_test.go         # Get next ASN tests
+│       ├── get_status_test.go           # Status tool tests
+│       ├── list_document_types_test.go  # List document types tests
+│       ├── update_config_test.go        # Config update tests
+│       └── update_document_test.go      # Update document tests
 ├── Makefile                   # Build automation
 ├── CLAUDE.md                  # This file
 ├── README.md                  # User-facing documentation
@@ -153,6 +125,23 @@ type Tool interface {
 **Description** - Human-readable description for Claude
 **InputSchema** - JSON Schema defining required/optional parameters
 
+### Data-Driven Tool Factory (`internal/tools/tool_factory.go`)
+
+Generic tool types that implement the `Tool` interface. Each type is parameterized
+by the response model type `T` and holds configuration (description, schema, path,
+formatter) rather than behavior. This eliminates per-tool boilerplate.
+
+**Factory types:**
+- **`noArgGetTool[T]`** - GET with no input; unmarshals response into `T`, calls `format(*T)`
+- **`getTool[T]`** - GET by ID; calls `fetchByID[T]`, calls `format(id, *T)`
+- **`listTool[T]`** - Paginated list; calls `listResources[T]`, calls `format(*PaginatedList[T])`
+- **`patchTool[T]`** - PATCH by ID; calls `patchByID[T]`, calls `format(*T)`
+- **`createMatchableTool[T]`** - POST for matchable resources; calls `createMatchable[T]`, calls `format(*T)`
+- **`deleteTool`** - DELETE by ID; calls `deleteByID`, returns confirmation string
+
+**Constructor functions** live in `tool_constructors.go` and instantiate these types
+with the appropriate configuration for each named tool.
+
 ### Tool Registration (`internal/server/server.go`)
 
 Tools are registered in `registerTools()`:
@@ -194,10 +183,12 @@ Shared utility functions to eliminate code duplication:
 - **`parseIDArg(args)`** - Parse and validate a required `id` field from JSON args
 - **`parsePatchArgs(args)`** - Extract `id` and build patch body (all fields except `id`)
 
-**Schema helpers:**
-- **`idOnlySchema(desc)`** - JSON schema for tools that only take an `id` parameter
-- **`paginatedListSchema()`** - JSON schema for list tools (page, page_size, name filter)
-- **`matchableResourceSchema(resourceName, includeID)`** - JSON schema for matchable resources (correspondents, document types) with name, match, matching_algorithm, is_insensitive fields
+**Generic operation helpers:**
+- **`fetchByID[T](ctx, client, args, pathFmt)`** - Parse ID, fetch resource, unmarshal response
+- **`patchByID[T](ctx, client, args, pathFmt)`** - Parse patch args, PATCH resource, unmarshal response
+- **`listResources[T](ctx, client, basePath, args)`** - Build list path, fetch, unmarshal paginated list
+- **`createMatchable[T](ctx, client, args, path)`** - Parse matchable params, POST, unmarshal response
+- **`deleteByID(ctx, client, args, pathFmt, resourceName)`** - Parse ID, DELETE resource, return confirmation
 
 **Shared types:**
 - **`matchableCreateParams`** - Common params struct for creating matchable resources
@@ -209,12 +200,26 @@ Shared utility functions to eliminate code duplication:
 **List query helpers:**
 - **`buildListPath(basePath, args)`** - Build URL path with query parameters from list args
 
+### Schema Builders (`internal/tools/schemas.go`)
+
+JSON schema builder functions, separated from helpers to keep concerns distinct:
+
+- **`emptySchema()`** - Schema with no parameters (for tools like `get_status`, `get_next_asn`)
+- **`idOnlySchema(desc)`** - Schema with a single required `id` integer field
+- **`paginatedListSchema()`** - Schema for list tools (page, page_size, name filter)
+- **`matchableResourceSchema(resourceName, includeID)`** - Schema for matchable resources (correspondents, document types) with name, match, matching_algorithm, is_insensitive fields; set `includeID` true for update tools
+- **`customFieldSchema(includeID)`** - Schema for custom field tools with name, data_type, extra_data fields
+- **`documentUpdateSchema()`** - Schema for the document update tool with all document fields
+- **`configUpdateSchema()`** - Schema for the config update tool with all config fields
+
 ### Response Formatters (`internal/tools/formatters.go`)
 
 All response formatting functions are centralized here:
 
 - **`formatStatus`** - System status summary
 - **`formatConfig`** - Application configuration grouped by category
+- **`formatMatchableFields`** - Shared formatter for resources with matching fields (name, slug, match, algorithm, document count); used by correspondents and document types
+- **`formatPaginatedList[T]`** - Generic paginated list formatter; handles empty message, header with count, per-item formatting, and pagination hint
 - **`formatCorrespondent`** / **`formatCorrespondentList`** - Correspondent details and lists
 - **`formatCustomField`** / **`formatCustomFieldList`** - Custom field details and lists
 - **`formatDocumentType`** / **`formatDocumentTypeList`** - Document type details and lists
@@ -225,7 +230,7 @@ All response formatting functions are centralized here:
 - **`formatOptInt`** / **`formatOptStr`** - Nullable int and string formatting helpers
 - **`formatFileSize`** - Human-readable byte size formatting (B/KB/MB/GB)
 - **`formatIntSlice`** / **`formatStringSlice`** - Slice-to-string formatting helpers
-- **`matchingAlgorithmName`** / **`matchDisplayOrDefault`** - Matching algorithm name lookup
+- **`matchingAlgorithmName`** - Matching algorithm integer-to-name lookup
 - **`formatDate`** / **`formatTaskLine`** - Date and task line formatting
 
 ## Development Workflow
@@ -256,88 +261,67 @@ make install   # Install to $GOPATH/bin
 
 ## Adding a New Tool
 
-### 1. Create the tool file in `internal/tools/`
+Most tools are implemented using the data-driven factory types in `tool_factory.go`.
+Choose the appropriate factory type based on what the tool does, then add a constructor
+in `tool_constructors.go`. Only create a dedicated file if the tool has logic that
+cannot be expressed with the factory types (see `get_config.go` and `list_documents.go`
+for examples).
+
+### 1. Choose the factory type
+
+- **`noArgGetTool[T]`** - GET with no parameters (e.g., `get_status`, `get_next_asn`)
+- **`getTool[T]`** - GET by ID (e.g., `get_correspondent`, `get_document`)
+- **`listTool[T]`** - Paginated list with name filter (e.g., `list_correspondents`)
+- **`patchTool[T]`** - PATCH by ID (e.g., `update_correspondent`, `update_config`)
+- **`createMatchableTool[T]`** - POST for resources with matching fields (e.g., `create_correspondent`)
+- **`deleteTool`** - DELETE by ID (e.g., `delete_correspondent`)
+
+### 2. Add a constructor in `internal/tools/tool_constructors.go`
 
 ```go
-package tools
-
-import (
-    "context"
-    "encoding/json"
-    "fmt"
-    "github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
-)
-
-type MyTool struct {
-    client *client.Client
-}
-
-func NewMyTool(c *client.Client) *MyTool {
-    return &MyTool{client: c}
-}
-
-func (t *MyTool) Description() string {
-    return "Brief description of what this tool does"
-}
-
-func (t *MyTool) InputSchema() map[string]interface{} {
-    return map[string]interface{}{
-        "type": "object",
-        "properties": map[string]interface{}{
-            "paramName": map[string]interface{}{
-                "type":        "string",
-                "description": "Parameter description",
-            },
+// NewGetMyResource creates a tool to get a my-resource by ID.
+func NewGetMyResource(c *client.Client) Tool {
+    return &getTool[models.MyResource]{
+        client:  c,
+        desc:    "Get a my-resource by ID from Paperless-NGX",
+        schema:  idOnlySchema("My resource ID"),
+        pathFmt: "/api/my_resources/%d/",
+        format: func(_ int, v *models.MyResource) string {
+            return formatMyResource(v)
         },
-        "required": []string{"paramName"},
     }
-}
-
-func (t *MyTool) Execute(ctx context.Context, args json.RawMessage) (string, error) {
-    var params struct {
-        ParamName string `json:"paramName"`
-    }
-    if err := json.Unmarshal(args, &params); err != nil {
-        return "", fmt.Errorf("failed to parse arguments: %w", err)
-    }
-
-    if params.ParamName == "" {
-        return "", fmt.Errorf("paramName is required")
-    }
-
-    body, err := doAPIRequest(ctx, t.client, "/api/endpoint")
-    if err != nil {
-        return "", fmt.Errorf("API request failed: %w", err)
-    }
-
-    var result YourModel
-    if err := json.Unmarshal(body, &result); err != nil {
-        return "", fmt.Errorf("failed to parse response: %w", err)
-    }
-
-    return fmt.Sprintf("Result: %v", result), nil
 }
 ```
 
-### 2. Register in `internal/server/server.go`
+Add a formatter in `internal/tools/formatters.go` if needed.
+
+### 3. Register in `internal/server/server.go`
 
 Add to `registerTools()`:
 ```go
-s.tools["my_tool"] = tools.NewMyTool(s.client)
+s.tools["get_my_resource"] = tools.NewGetMyResource(s.client)
 ```
 
-### 3. Write tests
+### 4. Write tests
 
-Create `internal/tools/my_tool_test.go` with:
-- Input validation tests
-- Description and schema tests
+Add the tool to the cross-cutting tests in `tool_common_test.go` (description and
+schema coverage). Add a tool-specific test file for input validation and response
+parsing if needed.
 
-### 4. Rebuild and test
+### 5. Rebuild and test
 
 ```bash
 make check
 make build
 ```
+
+### When to create a dedicated file
+
+Create a dedicated tool file (e.g., `my_tool.go`) only when the tool cannot use a
+factory type, such as when:
+- The API response is not a standard JSON object (e.g., array response like `get_config`)
+- The URL construction requires custom logic beyond standard pagination (e.g., `list_documents`)
+- The tool has multi-step behavior that does not map to a single HTTP operation
 
 ## Code Quality Standards
 
@@ -364,193 +348,199 @@ Every new tool should have:
 
 ### Code Organization
 - Keep it simple - prefer standard library over dependencies
-- One tool per file
-- Shared logic in helpers.go
-- Response formatting in formatters.go
-- Type definitions in models.go
+- Use factory types in `tool_factory.go` + constructors in `tool_constructors.go` for standard CRUD tools
+- Create dedicated files only for tools with non-standard logic (array responses, custom URL construction)
+- Shared HTTP/operation logic in `helpers.go`
+- JSON schema builders in `schemas.go`
+- Response formatting in `formatters.go`
+- Type definitions in `models.go`
 
 ## Current Tools
 
-### `get_status` (`internal/tools/get_status.go`)
+Most tools are constructed via factory types in `tool_constructors.go`. Exceptions
+are noted below.
+
+### `get_status` (`tool_constructors.go` — `NewGetStatus`)
 
 - **Endpoint**: `GET /api/status/`
 - **Input**: None
 - **Output**: Formatted status summary
 - **Model**: `models.SystemStatus`
 
-### `get_config` (`internal/tools/get_config.go`)
+### `get_config` (`get_config.go` — dedicated file)
 
 - **Endpoint**: `GET /api/config/`
 - **Input**: None
 - **Output**: Config summary grouped by category (OCR, App, Barcode)
 - **Model**: `models.ApplicationConfiguration`
-- **Note**: Response is a JSON array; tool takes the first element
+- **Note**: Dedicated file because response is a JSON array; tool takes the first element
 
-### `update_config` (`internal/tools/update_config.go`)
+### `update_config` (`tool_constructors.go` — `NewUpdateConfig`)
 
 - **Endpoint**: `PATCH /api/config/{id}/`
 - **Input**: `id` (required) + any config fields
 - **Output**: Updated config summary
 - **Note**: Only included fields are modified; `app_logo` skipped (binary upload)
 
-### `list_correspondents` (`internal/tools/list_correspondents.go`)
+### `list_correspondents` (`tool_constructors.go` — `NewListCorrespondents`)
 
 - **Endpoint**: `GET /api/correspondents/`
 - **Input**: `page`, `page_size`, `name` (all optional)
 - **Output**: Paginated correspondent list
 - **Model**: `models.PaginatedList[models.Correspondent]`
 
-### `get_correspondent` (`internal/tools/get_correspondent.go`)
+### `get_correspondent` (`tool_constructors.go` — `NewGetCorrespondent`)
 
 - **Endpoint**: `GET /api/correspondents/{id}/`
 - **Input**: `id` (required)
 - **Output**: Correspondent details with matching algorithm name
 - **Model**: `models.Correspondent`
 
-### `create_correspondent` (`internal/tools/create_correspondent.go`)
+### `create_correspondent` (`tool_constructors.go` — `NewCreateCorrespondent`)
 
 - **Endpoint**: `POST /api/correspondents/`
 - **Input**: `name` (required), `match`, `matching_algorithm`, `is_insensitive` (optional)
 - **Output**: Created correspondent details
 
-### `update_correspondent` (`internal/tools/update_correspondent.go`)
+### `update_correspondent` (`tool_constructors.go` — `NewUpdateCorrespondent`)
 
 - **Endpoint**: `PATCH /api/correspondents/{id}/`
 - **Input**: `id` (required) + any correspondent fields
 - **Output**: Updated correspondent details
 
-### `delete_correspondent` (`internal/tools/delete_correspondent.go`)
+### `delete_correspondent` (`tool_constructors.go` — `NewDeleteCorrespondent`)
 
 - **Endpoint**: `DELETE /api/correspondents/{id}/`
 - **Input**: `id` (required)
 - **Output**: Confirmation message
 
-### `list_custom_fields` (`internal/tools/list_custom_fields.go`)
+### `list_custom_fields` (`tool_constructors.go` — `NewListCustomFields`)
 
 - **Endpoint**: `GET /api/custom_fields/`
 - **Input**: `page`, `page_size`, `name` (all optional)
 - **Output**: Paginated custom field list
 - **Model**: `models.PaginatedList[models.CustomField]`
 
-### `get_custom_field` (`internal/tools/get_custom_field.go`)
+### `get_custom_field` (`tool_constructors.go` — `NewGetCustomField`)
 
 - **Endpoint**: `GET /api/custom_fields/{id}/`
 - **Input**: `id` (required)
 - **Output**: Custom field details with extra data
 - **Model**: `models.CustomField`
 
-### `create_custom_field` (`internal/tools/create_custom_field.go`)
+### `create_custom_field` (`create_custom_field.go` — dedicated file)
 
 - **Endpoint**: `POST /api/custom_fields/`
 - **Input**: `name`, `data_type` (required), `extra_data` (optional)
 - **Output**: Created custom field details
+- **Note**: Dedicated file because custom fields use a different schema than matchable resources
 
-### `update_custom_field` (`internal/tools/update_custom_field.go`)
+### `update_custom_field` (`tool_constructors.go` — `NewUpdateCustomField`)
 
 - **Endpoint**: `PATCH /api/custom_fields/{id}/`
 - **Input**: `id` (required) + any custom field fields
 - **Output**: Updated custom field details
 
-### `delete_custom_field` (`internal/tools/delete_custom_field.go`)
+### `delete_custom_field` (`tool_constructors.go` — `NewDeleteCustomField`)
 
 - **Endpoint**: `DELETE /api/custom_fields/{id}/`
 - **Input**: `id` (required)
 - **Output**: Confirmation message
 
-### `list_document_types` (`internal/tools/list_document_types.go`)
+### `list_document_types` (`tool_constructors.go` — `NewListDocumentTypes`)
 
 - **Endpoint**: `GET /api/document_types/`
 - **Input**: `page`, `page_size`, `name` (all optional)
 - **Output**: Paginated document type list
 - **Model**: `models.PaginatedList[models.DocumentType]`
 
-### `get_document_type` (`internal/tools/get_document_type.go`)
+### `get_document_type` (`tool_constructors.go` — `NewGetDocumentType`)
 
 - **Endpoint**: `GET /api/document_types/{id}/`
 - **Input**: `id` (required)
 - **Output**: Document type details with matching algorithm name
 - **Model**: `models.DocumentType`
 
-### `create_document_type` (`internal/tools/create_document_type.go`)
+### `create_document_type` (`tool_constructors.go` — `NewCreateDocumentType`)
 
 - **Endpoint**: `POST /api/document_types/`
 - **Input**: `name` (required), `match`, `matching_algorithm`, `is_insensitive` (optional)
 - **Output**: Created document type details
 
-### `update_document_type` (`internal/tools/update_document_type.go`)
+### `update_document_type` (`tool_constructors.go` — `NewUpdateDocumentType`)
 
 - **Endpoint**: `PATCH /api/document_types/{id}/`
 - **Input**: `id` (required) + any document type fields
 - **Output**: Updated document type details
 
-### `delete_document_type` (`internal/tools/delete_document_type.go`)
+### `delete_document_type` (`tool_constructors.go` — `NewDeleteDocumentType`)
 
 - **Endpoint**: `DELETE /api/document_types/{id}/`
 - **Input**: `id` (required)
 - **Output**: Confirmation message
 
-### `list_documents` (`internal/tools/list_documents.go`)
+### `list_documents` (`list_documents.go` — dedicated file)
 
 - **Endpoint**: `GET /api/documents/`
 - **Input**: `page`, `page_size`, `search`, `correspondent` (ID), `document_type` (ID), `tags` (array of IDs), `is_in_inbox` (all optional)
 - **Output**: Paginated document list with concise summaries
 - **Model**: `models.PaginatedList[models.Document]`
-- **Note**: Uses file-local `buildDocumentListPath` (not shared `buildListPath`) for document-specific filters
+- **Note**: Dedicated file because document filtering uses custom URL parameters beyond standard pagination
 
-### `get_document` (`internal/tools/get_document.go`)
+### `get_document` (`tool_constructors.go` — `NewGetDocument`)
 
 - **Endpoint**: `GET /api/documents/{id}/`
 - **Input**: `id` (required)
 - **Output**: Full document details including custom fields and content preview
 - **Model**: `models.Document`
 
-### `update_document` (`internal/tools/update_document.go`)
+### `update_document` (`tool_constructors.go` — `NewUpdateDocument`)
 
 - **Endpoint**: `PATCH /api/documents/{id}/`
 - **Input**: `id` (required) + `title`, `correspondent`, `document_type`, `storage_path`, `tags`, `archive_serial_number`, `created`, `custom_fields` (all optional)
 - **Output**: Updated document details
 
-### `delete_document` (`internal/tools/delete_document.go`)
+### `delete_document` (`tool_constructors.go` — `NewDeleteDocument`)
 
 - **Endpoint**: `DELETE /api/documents/{id}/`
 - **Input**: `id` (required)
 - **Output**: Confirmation message
 
-### `get_document_metadata` (`internal/tools/get_document_metadata.go`)
+### `get_document_metadata` (`tool_constructors.go` — `NewGetDocumentMetadata`)
 
 - **Endpoint**: `GET /api/documents/{id}/metadata/`
 - **Input**: `id` (required)
 - **Output**: File metadata (checksums, sizes, MIME type, archive version, OCR language)
 - **Model**: `models.DocumentMetadata`
 
-### `get_document_suggestions` (`internal/tools/get_document_suggestions.go`)
+### `get_document_suggestions` (`tool_constructors.go` — `NewGetDocumentSuggestions`)
 
 - **Endpoint**: `GET /api/documents/{id}/suggestions/`
 - **Input**: `id` (required)
 - **Output**: AI-generated suggestions (correspondents, document types, storage paths, tags, dates)
 - **Model**: `models.DocumentSuggestions`
 
-### `get_next_asn` (`internal/tools/get_next_asn.go`)
+### `get_next_asn` (`tool_constructors.go` — `NewGetNextASN`)
 
 - **Endpoint**: `GET /api/documents/next_asn/`
 - **Input**: None
 - **Output**: Next available archive serial number
 - **Note**: Response is a bare integer, not a JSON object
 
-### `upload_document` (`internal/tools/upload_document.go`)
+### `upload_document` (`upload_document.go` — dedicated file)
 
 - **Endpoint**: `POST /api/documents/post_document/`
 - **Content-Type**: `multipart/form-data`
 - **Input**: `file_path` (required, must be absolute) + `title`, `correspondent`, `document_type`, `storage_path`, `tags`, `archive_serial_number`, `created` (all optional)
 - **Output**: Confirmation with filename, size, and task ID
-- **Note**: Uses `client.PostMultipart`; expects HTTP 200; returns a task ID for async processing
+- **Note**: Dedicated file because it uses `client.PostMultipart`; expects HTTP 200; returns a task ID for async processing
 
-### `download_document` (`internal/tools/download_document.go`)
+### `download_document` (`download_document.go` — dedicated file)
 
 - **Endpoint**: `GET /api/documents/{id}/download/`
 - **Input**: `id`, `save_path` (both required); `original` (optional boolean, default false)
 - **Output**: Confirmation with save path, size, and content type
-- **Note**: Streams response body to file; validates `save_path` with `validateFilePath`
+- **Note**: Dedicated file because it streams response body to file; validates `save_path` with `validateFilePath`
 
 ## Configuration
 

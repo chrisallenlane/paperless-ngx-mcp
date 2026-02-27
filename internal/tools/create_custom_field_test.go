@@ -176,26 +176,6 @@ func TestCreateCustomField_Execute_WithExtraData(t *testing.T) {
 	}
 }
 
-func TestCreateCustomField_Execute_MissingName(t *testing.T) {
-	c := client.New("http://localhost", "test-token")
-	tool := NewCreateCustomField(c)
-
-	_, err := tool.Execute(
-		context.Background(),
-		json.RawMessage(`{"data_type": "string"}`),
-	)
-	if err == nil {
-		t.Fatal("Expected error for missing name")
-	}
-
-	if !strings.Contains(err.Error(), "name is required") {
-		t.Errorf(
-			"Error should mention name is required, got: %s",
-			err.Error(),
-		)
-	}
-}
-
 func TestCreateCustomField_Execute_MissingDataType(t *testing.T) {
 	c := client.New("http://localhost", "test-token")
 	tool := NewCreateCustomField(c)
@@ -213,84 +193,5 @@ func TestCreateCustomField_Execute_MissingDataType(t *testing.T) {
 			"Error should mention data_type is required, got: %s",
 			err.Error(),
 		)
-	}
-}
-
-func TestCreateCustomField_Execute_ServerError(t *testing.T) {
-	server := httptest.NewServer(
-		http.HandlerFunc(
-			func(w http.ResponseWriter, _ *http.Request) {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte("Internal Server Error"))
-			},
-		),
-	)
-	defer server.Close()
-
-	c := client.NewWithHTTPClient(
-		server.URL,
-		"test-token",
-		server.Client(),
-	)
-	tool := NewCreateCustomField(c)
-
-	args := `{"name": "Test", "data_type": "string"}`
-
-	_, err := tool.Execute(
-		context.Background(),
-		json.RawMessage(args),
-	)
-	if err == nil {
-		t.Fatal("Expected error for server error response")
-	}
-
-	if !strings.Contains(err.Error(), "500") {
-		t.Errorf(
-			"Error should mention status code, got: %s",
-			err.Error(),
-		)
-	}
-}
-
-func TestCreateCustomField_Description(t *testing.T) {
-	c := client.New("http://localhost", "test-token")
-	tool := NewCreateCustomField(c)
-
-	desc := tool.Description()
-	if desc == "" {
-		t.Error("Description should not be empty")
-	}
-}
-
-func TestCreateCustomField_InputSchema(t *testing.T) {
-	c := client.New("http://localhost", "test-token")
-	tool := NewCreateCustomField(c)
-
-	schema := tool.InputSchema()
-	if schema == nil {
-		t.Fatal("InputSchema should not be nil")
-	}
-
-	schemaType, ok := schema["type"].(string)
-	if !ok || schemaType != "object" {
-		t.Errorf("Schema type = %v, want object", schema["type"])
-	}
-
-	required, ok := schema["required"].([]string)
-	if !ok {
-		t.Fatal("Schema should have required field")
-	}
-
-	requiredFields := map[string]bool{}
-	for _, r := range required {
-		requiredFields[r] = true
-	}
-
-	if !requiredFields["name"] {
-		t.Error("name should be in required fields")
-	}
-
-	if !requiredFields["data_type"] {
-		t.Error("data_type should be in required fields")
 	}
 }

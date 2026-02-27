@@ -337,38 +337,3 @@ func TestUploadDocument_Execute_ServerError(t *testing.T) {
 		)
 	}
 }
-
-func TestUploadDocument_Description(t *testing.T) {
-	c := client.New("http://localhost", "test-token")
-	tool := NewUploadDocument(c)
-
-	desc := tool.Description()
-	if desc == "" {
-		t.Error("Description should not be empty")
-	}
-}
-
-func TestUploadDocument_InputSchema(t *testing.T) {
-	c := client.New("http://localhost", "test-token")
-	tool := NewUploadDocument(c)
-
-	schema := tool.InputSchema()
-	if schema == nil {
-		t.Fatal("InputSchema should not be nil")
-	}
-
-	required, ok := schema["required"].([]string)
-	if !ok {
-		t.Fatal("Schema should have required field")
-	}
-
-	foundFilePath := false
-	for _, r := range required {
-		if r == "file_path" {
-			foundFilePath = true
-		}
-	}
-	if !foundFilePath {
-		t.Error("file_path should be in required fields")
-	}
-}

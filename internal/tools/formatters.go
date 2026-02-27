@@ -10,6 +10,8 @@ import (
 
 const bytesPerTB = 1024 * 1024 * 1024 * 1024
 
+const paginationHint = "\n(more results available — use page parameter)"
+
 var matchingAlgorithmNames = map[int]string{
 	0: "None",
 	1: "Any word",
@@ -159,34 +161,73 @@ func matchingAlgorithmName(algo int) string {
 	return name
 }
 
-func matchDisplayOrDefault(match string) string {
-	if match == "" {
-		return "(none)"
+func formatMatchableFields(
+	label string,
+	id int,
+	name, slug, match string,
+	algo int,
+	isInsensitive bool,
+	docCount int,
+) string {
+	algoName := matchingAlgorithmName(algo)
+	matchDisplay := match
+	if matchDisplay == "" {
+		matchDisplay = "(none)"
 	}
-	return match
+
+	out := fmt.Sprintf("%s (ID: %d)\n", label, id)
+	out += fmt.Sprintf("  Name: %s\n", name)
+	out += fmt.Sprintf("  Slug: %s\n", slug)
+	out += fmt.Sprintf("  Match: %s\n", matchDisplay)
+	out += fmt.Sprintf(
+		"  Matching Algorithm: %d (%s)\n",
+		algo,
+		algoName,
+	)
+	out += fmt.Sprintf("  Case Insensitive: %v\n", isInsensitive)
+	out += fmt.Sprintf("  Document Count: %d\n", docCount)
+
+	return out
 }
 
 func formatCorrespondent(c *models.Correspondent) string {
-	algoName := matchingAlgorithmName(c.MatchingAlgorithm)
-	matchDisplay := matchDisplayOrDefault(c.Match)
+	out := formatMatchableFields(
+		"Correspondent",
+		c.ID,
+		c.Name,
+		c.Slug,
+		c.Match,
+		c.MatchingAlgorithm,
+		c.IsInsensitive,
+		c.DocumentCount,
+	)
 
 	lastCorr := "(none)"
 	if c.LastCorrespondence != nil {
 		lastCorr = formatDate(*c.LastCorrespondence)
 	}
-
-	out := fmt.Sprintf("Correspondent (ID: %d)\n", c.ID)
-	out += fmt.Sprintf("  Name: %s\n", c.Name)
-	out += fmt.Sprintf("  Slug: %s\n", c.Slug)
-	out += fmt.Sprintf("  Match: %s\n", matchDisplay)
-	out += fmt.Sprintf(
-		"  Matching Algorithm: %d (%s)\n",
-		c.MatchingAlgorithm,
-		algoName,
-	)
-	out += fmt.Sprintf("  Case Insensitive: %v\n", c.IsInsensitive)
-	out += fmt.Sprintf("  Document Count: %d\n", c.DocumentCount)
 	out += fmt.Sprintf("  Last Correspondence: %s\n", lastCorr)
+
+	return out
+}
+
+func formatPaginatedList[T any](
+	list *models.PaginatedList[T],
+	emptyMsg, header string,
+	formatItem func(T) string,
+) string {
+	if list.Count == 0 {
+		return emptyMsg
+	}
+
+	out := fmt.Sprintf("%s: %d total\n\n", header, list.Count)
+	for _, item := range list.Results {
+		out += formatItem(item)
+	}
+
+	if list.Next != nil {
+		out += paginationHint
+	}
 
 	return out
 }
@@ -194,26 +235,20 @@ func formatCorrespondent(c *models.Correspondent) string {
 func formatCorrespondentList(
 	list *models.PaginatedList[models.Correspondent],
 ) string {
-	if list.Count == 0 {
-		return "No correspondents found."
-	}
-
-	out := fmt.Sprintf("Correspondents: %d total\n\n", list.Count)
-	for _, c := range list.Results {
-		out += fmt.Sprintf(
-			"%d. %s (ID: %d) — %d documents\n",
-			c.ID,
-			c.Name,
-			c.ID,
-			c.DocumentCount,
-		)
-	}
-
-	if list.Next != nil {
-		out += "\n(more results available — use page parameter)"
-	}
-
-	return out
+	return formatPaginatedList(
+		list,
+		"No correspondents found.",
+		"Correspondents",
+		func(c models.Correspondent) string {
+			return fmt.Sprintf(
+				"%d. %s (ID: %d) — %d documents\n",
+				c.ID,
+				c.Name,
+				c.ID,
+				c.DocumentCount,
+			)
+		},
+	)
 }
 
 func formatCustomField(f *models.CustomField) string {
@@ -234,74 +269,53 @@ func formatCustomField(f *models.CustomField) string {
 func formatCustomFieldList(
 	list *models.PaginatedList[models.CustomField],
 ) string {
-	if list.Count == 0 {
-		return "No custom fields found."
-	}
-
-	out := fmt.Sprintf("Custom Fields: %d total\n\n", list.Count)
-	for _, f := range list.Results {
-		out += fmt.Sprintf(
-			"%d. %s (ID: %d) — type: %s, %d documents\n",
-			f.ID,
-			f.Name,
-			f.ID,
-			f.DataType,
-			f.DocumentCount,
-		)
-	}
-
-	if list.Next != nil {
-		out += "\n(more results available — use page parameter)"
-	}
-
-	return out
+	return formatPaginatedList(
+		list,
+		"No custom fields found.",
+		"Custom Fields",
+		func(f models.CustomField) string {
+			return fmt.Sprintf(
+				"%d. %s (ID: %d) — type: %s, %d documents\n",
+				f.ID,
+				f.Name,
+				f.ID,
+				f.DataType,
+				f.DocumentCount,
+			)
+		},
+	)
 }
 
 func formatDocumentType(dt *models.DocumentType) string {
-	algoName := matchingAlgorithmName(dt.MatchingAlgorithm)
-	matchDisplay := matchDisplayOrDefault(dt.Match)
-
-	out := fmt.Sprintf("Document Type (ID: %d)\n", dt.ID)
-	out += fmt.Sprintf("  Name: %s\n", dt.Name)
-	out += fmt.Sprintf("  Slug: %s\n", dt.Slug)
-	out += fmt.Sprintf("  Match: %s\n", matchDisplay)
-	out += fmt.Sprintf(
-		"  Matching Algorithm: %d (%s)\n",
+	return formatMatchableFields(
+		"Document Type",
+		dt.ID,
+		dt.Name,
+		dt.Slug,
+		dt.Match,
 		dt.MatchingAlgorithm,
-		algoName,
+		dt.IsInsensitive,
+		dt.DocumentCount,
 	)
-	out += fmt.Sprintf("  Case Insensitive: %v\n", dt.IsInsensitive)
-	out += fmt.Sprintf("  Document Count: %d\n", dt.DocumentCount)
-
-	return out
 }
 
 func formatDocumentTypeList(
 	list *models.PaginatedList[models.DocumentType],
 ) string {
-	if list.Count == 0 {
-		return "No document types found."
-	}
-
-	out := fmt.Sprintf(
-		"Document Types: %d total\n\n",
-		list.Count,
+	return formatPaginatedList(
+		list,
+		"No document types found.",
+		"Document Types",
+		func(dt models.DocumentType) string {
+			return fmt.Sprintf(
+				"%d. %s (ID: %d) — %d documents\n",
+				dt.ID,
+				dt.Name,
+				dt.ID,
+				dt.DocumentCount,
+			)
+		},
 	)
-	for _, dt := range list.Results {
-		out += fmt.Sprintf(
-			"%d. %s (ID: %d) — %d documents\n",
-			dt.ID,
-			dt.Name,
-			dt.ID,
-			dt.DocumentCount,
-		)
-	}
-
-	if list.Next != nil {
-		out += "\n(more results available — use page parameter)"
-	}
-
-	return out
 }
 
 func formatDocument(d *models.Document) string {
@@ -368,37 +382,25 @@ func formatDocument(d *models.Document) string {
 func formatDocumentList(
 	list *models.PaginatedList[models.Document],
 ) string {
-	if list.Count == 0 {
-		return "No documents found."
-	}
-
-	out := fmt.Sprintf("Documents: %d total\n\n", list.Count)
-	for _, d := range list.Results {
-		corr := formatOptInt(d.Correspondent)
-		docType := formatOptInt(d.DocumentType)
-		asn := formatOptInt(d.ArchiveSerialNumber)
-
-		out += fmt.Sprintf(
-			"%d. %s (ID: %d)\n",
-			d.ID,
-			d.Title,
-			d.ID,
-		)
-		out += fmt.Sprintf(
-			"   Correspondent: %s | Type: %s | "+
-				"ASN: %s | Created: %s\n",
-			corr,
-			docType,
-			asn,
-			formatDate(d.Created),
-		)
-	}
-
-	if list.Next != nil {
-		out += "\n(more results available — use page parameter)"
-	}
-
-	return out
+	return formatPaginatedList(
+		list,
+		"No documents found.",
+		"Documents",
+		func(d models.Document) string {
+			return fmt.Sprintf(
+				"%d. %s (ID: %d)\n"+
+					"   Correspondent: %s | Type: %s"+
+					" | ASN: %s | Created: %s\n",
+				d.ID,
+				d.Title,
+				d.ID,
+				formatOptInt(d.Correspondent),
+				formatOptInt(d.DocumentType),
+				formatOptInt(d.ArchiveSerialNumber),
+				formatDate(d.Created),
+			)
+		},
+	)
 }
 
 func formatOptInt(v *int) string {
