@@ -25,6 +25,41 @@ const matchingAlgorithmDesc = "Matching algorithm: " +
 	"3=Exact match, 4=Regex, " +
 	"5=Fuzzy word, 6=Automatic"
 
+// addMatchableProps adds the shared matching fields (match,
+// matching_algorithm, is_insensitive) to a schema properties
+// map.
+func addMatchableProps(
+	props map[string]interface{},
+) {
+	props["match"] = map[string]interface{}{
+		"type":        "string",
+		"description": "Match pattern for auto-assignment",
+	}
+	props["matching_algorithm"] = map[string]interface{}{
+		"type":        "integer",
+		"description": matchingAlgorithmDesc,
+	}
+	props["is_insensitive"] = map[string]interface{}{
+		"type":        "boolean",
+		"description": "Case-insensitive matching",
+	}
+}
+
+// addPaginationProps adds page and page_size fields to a
+// schema properties map.
+func addPaginationProps(
+	props map[string]interface{},
+) {
+	props["page"] = map[string]interface{}{
+		"type":        "integer",
+		"description": "Page number (default 1)",
+	}
+	props["page_size"] = map[string]interface{}{
+		"type":        "integer",
+		"description": "Results per page (default 25)",
+	}
+}
+
 // emptySchema returns an input schema with no parameters.
 func emptySchema() map[string]interface{} {
 	return map[string]interface{}{
@@ -62,19 +97,6 @@ func tagSchema(
 			"description": "Hex color code " +
 				"(e.g., #a6cee3)",
 		},
-		"match": map[string]interface{}{
-			"type": "string",
-			"description": "Match pattern " +
-				"for auto-assignment",
-		},
-		"matching_algorithm": map[string]interface{}{
-			"type":        "integer",
-			"description": matchingAlgorithmDesc,
-		},
-		"is_insensitive": map[string]interface{}{
-			"type":        "boolean",
-			"description": "Case-insensitive matching",
-		},
 		"is_inbox_tag": map[string]interface{}{
 			"type": "boolean",
 			"description": "Automatically assign to " +
@@ -86,6 +108,7 @@ func tagSchema(
 				"for hierarchical tags",
 		},
 	}
+	addMatchableProps(props)
 
 	required := withIDForUpdate(
 		props,
@@ -117,20 +140,8 @@ func storagePathSchema(
 				"(e.g., {correspondent}/" +
 				"{document_type}/{title})",
 		},
-		"match": map[string]interface{}{
-			"type": "string",
-			"description": "Match pattern " +
-				"for auto-assignment",
-		},
-		"matching_algorithm": map[string]interface{}{
-			"type":        "integer",
-			"description": matchingAlgorithmDesc,
-		},
-		"is_insensitive": map[string]interface{}{
-			"type":        "boolean",
-			"description": "Case-insensitive matching",
-		},
 	}
+	addMatchableProps(props)
 
 	required := withIDForUpdate(
 		props,
@@ -181,40 +192,27 @@ func taskListSchema() map[string]interface{} {
 // paginationOnlySchema returns an input schema with only page and
 // page_size parameters (no name filter).
 func paginationOnlySchema() map[string]interface{} {
+	props := map[string]interface{}{}
+	addPaginationProps(props)
 	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"page": map[string]interface{}{
-				"type":        "integer",
-				"description": "Page number (default 1)",
-			},
-			"page_size": map[string]interface{}{
-				"type":        "integer",
-				"description": "Results per page (default 25)",
-			},
-		},
+		"type":       "object",
+		"properties": props,
 	}
 }
 
 // paginatedListSchema returns an input schema for paginated list endpoints.
 func paginatedListSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"page": map[string]interface{}{
-				"type":        "integer",
-				"description": "Page number (default 1)",
-			},
-			"page_size": map[string]interface{}{
-				"type":        "integer",
-				"description": "Results per page (default 25)",
-			},
-			"name": map[string]interface{}{
-				"type": "string",
-				"description": "Filter by name " +
-					"(case-insensitive contains)",
-			},
+	props := map[string]interface{}{
+		"name": map[string]interface{}{
+			"type": "string",
+			"description": "Filter by name " +
+				"(case-insensitive contains)",
 		},
+	}
+	addPaginationProps(props)
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": props,
 	}
 }
 
@@ -230,19 +228,8 @@ func matchableResourceSchema(
 			"type":        "string",
 			"description": resourceName + " name",
 		},
-		"match": map[string]interface{}{
-			"type":        "string",
-			"description": "Match pattern for auto-assignment",
-		},
-		"matching_algorithm": map[string]interface{}{
-			"type":        "integer",
-			"description": matchingAlgorithmDesc,
-		},
-		"is_insensitive": map[string]interface{}{
-			"type":        "boolean",
-			"description": "Case-insensitive matching",
-		},
 	}
+	addMatchableProps(props)
 
 	required := withIDForUpdate(
 		props,

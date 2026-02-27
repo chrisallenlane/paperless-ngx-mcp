@@ -159,28 +159,28 @@ func fetchByID[T any](
 	c *client.Client,
 	args json.RawMessage,
 	pathFmt string,
-) (*T, int, error) {
+) (*T, error) {
 	id, err := parseIDArg(args)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	path := fmt.Sprintf(pathFmt, id)
 
 	body, err := doAPIRequest(ctx, c, path)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	var result T
 	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, 0, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"failed to parse response: %w",
 			err,
 		)
 	}
 
-	return &result, id, nil
+	return &result, nil
 }
 
 // patchByID parses patch args, performs a PATCH, and unmarshals the response.

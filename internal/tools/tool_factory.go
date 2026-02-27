@@ -96,7 +96,7 @@ func (t *getTool[T]) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	result, _, err := fetchByID[T](
+	result, err := fetchByID[T](
 		ctx,
 		t.client,
 		args,
