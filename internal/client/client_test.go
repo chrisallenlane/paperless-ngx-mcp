@@ -155,6 +155,52 @@ func TestPut(t *testing.T) {
 	}
 }
 
+func TestPatch(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != "PATCH" {
+				t.Errorf("Expected PATCH, got %s", r.Method)
+			}
+
+			authHeader := r.Header.Get("Authorization")
+			if authHeader != "Token token" {
+				t.Errorf(
+					"Expected Authorization header, got %q",
+					authHeader,
+				)
+			}
+
+			contentType := r.Header.Get("Content-Type")
+			if contentType != "application/json" {
+				t.Errorf(
+					"Expected Content-Type application/json, got %s",
+					contentType,
+				)
+			}
+
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"id": 1}`))
+		}),
+	)
+	defer server.Close()
+
+	c := NewWithHTTPClient(server.URL, "token", server.Client())
+
+	resp, err := c.Patch(
+		context.Background(),
+		"/test/1",
+		map[string]string{"key": "patched"},
+	)
+	if err != nil {
+		t.Fatalf("Patch failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected 200, got %d", resp.StatusCode)
+	}
+}
+
 func TestDelete(t *testing.T) {
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

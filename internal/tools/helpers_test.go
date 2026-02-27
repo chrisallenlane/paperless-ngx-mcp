@@ -1,60 +1,45 @@
 package tools
 
 import (
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 )
 
-func TestParseJSONResponse(t *testing.T) {
-	type testItem struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
+func TestReadResponse_OK(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(`{"id": 1}`)),
 	}
 
-	tests := []struct {
-		name      string
-		jsonData  string
-		expectErr bool
-	}{
-		{
-			name:      "valid JSON",
-			jsonData:  `{"id": 1, "name": "Test Item"}`,
-			expectErr: false,
-		},
-		{
-			name:      "invalid JSON",
-			jsonData:  `{invalid json}`,
-			expectErr: true,
-		},
-		{
-			name:      "empty JSON",
-			jsonData:  ``,
-			expectErr: true,
-		},
+	body, err := readResponse(resp)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var result testItem
-			err := ParseJSONResponse([]byte(tt.jsonData), &result)
+	if string(body) != `{"id": 1}` {
+		t.Errorf("Body = %s, want {\"id\": 1}", string(body))
+	}
+}
 
-			if tt.expectErr && err == nil {
-				t.Error("ParseJSONResponse() expected error, got nil")
-			}
-			if !tt.expectErr && err != nil {
-				t.Errorf(
-					"ParseJSONResponse() unexpected error: %v",
-					err,
-				)
-			}
+func TestReadResponse_Error(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: http.StatusInternalServerError,
+		Body: io.NopCloser(
+			strings.NewReader("Internal Server Error"),
+		),
+	}
 
-			if !tt.expectErr && err == nil {
-				if result.ID != 1 || result.Name != "Test Item" {
-					t.Errorf(
-						"ParseJSONResponse() parsed incorrectly: %+v",
-						result,
-					)
-				}
-			}
-		})
+	_, err := readResponse(resp)
+	if err == nil {
+		t.Fatal("Expected error for non-200 response")
+	}
+
+	if !strings.Contains(err.Error(), "500") {
+		t.Errorf(
+			"Error should mention status code, got: %s",
+			err.Error(),
+		)
 	}
 }
