@@ -115,3 +115,43 @@ func (c *Client) Delete(
 ) (*http.Response, error) {
 	return c.doRequest(ctx, "DELETE", path, nil)
 }
+
+// PostMultipart performs a POST request with a multipart/form-data body.
+// The body reader should contain the pre-built multipart content, and
+// contentType should include the multipart boundary.
+func (c *Client) PostMultipart(
+	ctx context.Context,
+	path string,
+	body io.Reader,
+	contentType string,
+) (*http.Response, error) {
+	url := c.BaseURL + path
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		"POST",
+		url,
+		body,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to create request: %w",
+			err,
+		)
+	}
+
+	req.Header.Set("Content-Type", contentType)
+	if c.Token != "" {
+		req.Header.Set(
+			"Authorization",
+			"Token "+c.Token,
+		)
+	}
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
