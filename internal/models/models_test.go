@@ -505,6 +505,54 @@ func TestCustomFieldUnmarshalNullExtraData(t *testing.T) {
 	}
 }
 
+func TestDocumentTypeUnmarshal(t *testing.T) {
+	jsonData := `{
+		"id": 1,
+		"slug": "invoice",
+		"name": "Invoice",
+		"match": "invoice",
+		"matching_algorithm": 1,
+		"is_insensitive": true,
+		"document_count": 10
+	}`
+
+	var dt DocumentType
+	if err := json.Unmarshal([]byte(jsonData), &dt); err != nil {
+		t.Fatalf("Failed to unmarshal DocumentType: %v", err)
+	}
+
+	if dt.ID != 1 {
+		t.Errorf("ID = %d, want 1", dt.ID)
+	}
+
+	if dt.Name != "Invoice" {
+		t.Errorf("Name = %s, want Invoice", dt.Name)
+	}
+
+	if dt.Slug != "invoice" {
+		t.Errorf("Slug = %s, want invoice", dt.Slug)
+	}
+
+	if dt.Match != "invoice" {
+		t.Errorf("Match = %s, want invoice", dt.Match)
+	}
+
+	if dt.MatchingAlgorithm != 1 {
+		t.Errorf(
+			"MatchingAlgorithm = %d, want 1",
+			dt.MatchingAlgorithm,
+		)
+	}
+
+	if !dt.IsInsensitive {
+		t.Error("IsInsensitive = false, want true")
+	}
+
+	if dt.DocumentCount != 10 {
+		t.Errorf("DocumentCount = %d, want 10", dt.DocumentCount)
+	}
+}
+
 func TestApplicationConfigurationUnmarshalAllNulls(t *testing.T) {
 	jsonData := `[{
 		"id": 1,

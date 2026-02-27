@@ -87,7 +87,7 @@ func parseIDArg(args json.RawMessage) (int, error) {
 // from the remaining fields in the JSON args.
 func parsePatchArgs(
 	args json.RawMessage,
-) (int64, map[string]json.RawMessage, error) {
+) (int, map[string]json.RawMessage, error) {
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(args, &raw); err != nil {
 		return 0, nil, fmt.Errorf(
@@ -101,7 +101,7 @@ func parsePatchArgs(
 		return 0, nil, fmt.Errorf("id is required")
 	}
 
-	var id int64
+	var id int
 	if err := json.Unmarshal(idRaw, &id); err != nil {
 		return 0, nil, fmt.Errorf("failed to parse id: %w", err)
 	}
@@ -154,6 +154,60 @@ func paginatedListSchema() map[string]interface{} {
 			},
 		},
 	}
+}
+
+// matchableResourceSchema returns an input schema for resources with matching
+// fields (name, match, matching_algorithm, is_insensitive). Set includeID
+// to true for update tools, false for create tools.
+func matchableResourceSchema(
+	resourceName string,
+	includeID bool,
+) map[string]interface{} {
+	props := map[string]interface{}{
+		"name": map[string]interface{}{
+			"type":        "string",
+			"description": resourceName + " name",
+		},
+		"match": map[string]interface{}{
+			"type":        "string",
+			"description": "Match pattern for auto-assignment",
+		},
+		"matching_algorithm": map[string]interface{}{
+			"type": "integer",
+			"description": "Matching algorithm: " +
+				"0=None, 1=Any word, 2=All words, " +
+				"3=Exact match, 4=Regex, " +
+				"5=Fuzzy word, 6=Automatic",
+		},
+		"is_insensitive": map[string]interface{}{
+			"type":        "boolean",
+			"description": "Case-insensitive matching",
+		},
+	}
+
+	required := []string{"name"}
+	if includeID {
+		props["id"] = map[string]interface{}{
+			"type":        "integer",
+			"description": resourceName + " ID to update",
+		}
+		required = []string{"id"}
+	}
+
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": props,
+		"required":   required,
+	}
+}
+
+// matchableCreateParams holds common parameters for creating matchable
+// resources (correspondents, document types).
+type matchableCreateParams struct {
+	Name              string `json:"name"`
+	Match             string `json:"match,omitempty"`
+	MatchingAlgorithm *int   `json:"matching_algorithm,omitempty"`
+	IsInsensitive     *bool  `json:"is_insensitive,omitempty"`
 }
 
 // listParams holds common pagination and filter parameters.

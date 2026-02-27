@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -69,5 +70,40 @@ func TestReadResponse_Error(t *testing.T) {
 			"Error should mention status code, got: %s",
 			err.Error(),
 		)
+	}
+}
+
+func TestBuildListPath_WithPageParams(t *testing.T) {
+	args := json.RawMessage(
+		`{"page": 2, "page_size": 10}`,
+	)
+
+	path, err := buildListPath("/api/test/", args)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if !strings.Contains(path, "page=2") {
+		t.Errorf("Path should contain page=2, got: %s", path)
+	}
+
+	if !strings.Contains(path, "page_size=10") {
+		t.Errorf(
+			"Path should contain page_size=10, got: %s",
+			path,
+		)
+	}
+}
+
+func TestBuildListPath_NoParams(t *testing.T) {
+	args := json.RawMessage(`{}`)
+
+	path, err := buildListPath("/api/test/", args)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if path != "/api/test/" {
+		t.Errorf("Path = %s, want /api/test/", path)
 	}
 }

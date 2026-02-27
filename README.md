@@ -123,6 +123,27 @@ optional.
 #### `delete_custom_field`
 Deletes a custom field by ID.
 
+### Document Types
+
+#### `list_document_types`
+Lists document types with optional filtering by name and pagination (page,
+page_size parameters).
+
+#### `get_document_type`
+Gets a single document type by ID, including name, match pattern, matching
+algorithm, and document count.
+
+#### `create_document_type`
+Creates a new document type. Requires `name`; optionally accepts `match`,
+`matching_algorithm`, and `is_insensitive`.
+
+#### `update_document_type`
+Updates an existing document type via PATCH. Requires `id`; any other
+document type field is optional.
+
+#### `delete_document_type`
+Deletes a document type by ID.
+
 ## Development
 
 ### Build

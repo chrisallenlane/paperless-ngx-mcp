@@ -28,35 +28,7 @@ func (t *UpdateCorrespondent) Description() string {
 
 // InputSchema returns the JSON schema for the tool's input parameters.
 func (t *UpdateCorrespondent) InputSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"id": map[string]interface{}{
-				"type":        "integer",
-				"description": "Correspondent ID to update",
-			},
-			"name": map[string]interface{}{
-				"type":        "string",
-				"description": "Correspondent name",
-			},
-			"match": map[string]interface{}{
-				"type":        "string",
-				"description": "Match pattern for auto-assignment",
-			},
-			"matching_algorithm": map[string]interface{}{
-				"type": "integer",
-				"description": "Matching algorithm: " +
-					"0=None, 1=Any word, 2=All words, " +
-					"3=Exact match, 4=Regex, " +
-					"5=Fuzzy word, 6=Automatic",
-			},
-			"is_insensitive": map[string]interface{}{
-				"type":        "boolean",
-				"description": "Case-insensitive matching",
-			},
-		},
-		"required": []string{"id"},
-	}
+	return matchableResourceSchema("Correspondent", true)
 }
 
 // Execute runs the tool and returns a formatted correspondent summary.

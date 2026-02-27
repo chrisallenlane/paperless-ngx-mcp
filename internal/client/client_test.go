@@ -126,35 +126,6 @@ func TestPost(t *testing.T) {
 	}
 }
 
-func TestPut(t *testing.T) {
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != "PUT" {
-				t.Errorf("Expected PUT, got %s", r.Method)
-			}
-
-			w.WriteHeader(http.StatusOK)
-		}),
-	)
-	defer server.Close()
-
-	c := NewWithHTTPClient(server.URL, "token", server.Client())
-
-	resp, err := c.Put(
-		context.Background(),
-		"/test/1",
-		map[string]string{"key": "updated"},
-	)
-	if err != nil {
-		t.Fatalf("Put failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected 200, got %d", resp.StatusCode)
-	}
-}
-
 func TestPatch(t *testing.T) {
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

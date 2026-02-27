@@ -247,3 +247,57 @@ func formatCustomFieldList(
 
 	return out
 }
+
+func formatDocumentType(dt *models.DocumentType) string {
+	algoName := matchingAlgorithmNames[dt.MatchingAlgorithm]
+	if algoName == "" {
+		algoName = "Unknown"
+	}
+
+	matchDisplay := dt.Match
+	if matchDisplay == "" {
+		matchDisplay = "(none)"
+	}
+
+	out := fmt.Sprintf("Document Type (ID: %d)\n", dt.ID)
+	out += fmt.Sprintf("  Name: %s\n", dt.Name)
+	out += fmt.Sprintf("  Slug: %s\n", dt.Slug)
+	out += fmt.Sprintf("  Match: %s\n", matchDisplay)
+	out += fmt.Sprintf(
+		"  Matching Algorithm: %d (%s)\n",
+		dt.MatchingAlgorithm,
+		algoName,
+	)
+	out += fmt.Sprintf("  Case Insensitive: %v\n", dt.IsInsensitive)
+	out += fmt.Sprintf("  Document Count: %d\n", dt.DocumentCount)
+
+	return out
+}
+
+func formatDocumentTypeList(
+	list *models.PaginatedList[models.DocumentType],
+) string {
+	if list.Count == 0 {
+		return "No document types found."
+	}
+
+	out := fmt.Sprintf(
+		"Document Types: %d total\n\n",
+		list.Count,
+	)
+	for _, dt := range list.Results {
+		out += fmt.Sprintf(
+			"%d. %s (ID: %d) — %d documents\n",
+			dt.ID,
+			dt.Name,
+			dt.ID,
+			dt.DocumentCount,
+		)
+	}
+
+	if list.Next != nil {
+		out += "\n(more results available — use page parameter)"
+	}
+
+	return out
+}

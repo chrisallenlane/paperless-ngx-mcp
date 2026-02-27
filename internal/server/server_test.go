@@ -103,6 +103,10 @@ func TestHandleListTools(t *testing.T) {
 		t.Fatal("tools should be a slice")
 	}
 
+	if len(tools) == 0 {
+		t.Fatal("Expected at least one registered tool")
+	}
+
 	// Verify tool structure for any registered tools
 	for _, tool := range tools {
 		if _, ok := tool["name"]; !ok {

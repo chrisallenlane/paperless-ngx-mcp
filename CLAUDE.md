@@ -62,7 +62,17 @@ paperless-ngx-mcp/
 │       ├── update_custom_field.go       # Update custom field tool
 │       ├── update_custom_field_test.go  # Update custom field tests
 │       ├── delete_custom_field.go       # Delete custom field tool
-│       └── delete_custom_field_test.go  # Delete custom field tests
+│       ├── delete_custom_field_test.go  # Delete custom field tests
+│       ├── list_document_types.go       # List document types tool
+│       ├── list_document_types_test.go  # List document types tests
+│       ├── get_document_type.go         # Get document type tool
+│       ├── get_document_type_test.go    # Get document type tests
+│       ├── create_document_type.go      # Create document type tool
+│       ├── create_document_type_test.go # Create document type tests
+│       ├── update_document_type.go      # Update document type tool
+│       ├── update_document_type_test.go # Update document type tests
+│       ├── delete_document_type.go      # Delete document type tool
+│       └── delete_document_type_test.go # Delete document type tests
 ├── Makefile                   # Build automation
 ├── CLAUDE.md                  # This file
 ├── README.md                  # User-facing documentation
@@ -100,7 +110,6 @@ HTTP client for Paperless-NGX API requests:
 **HTTP Methods:**
 - `Get(ctx, path)` - GET requests
 - `Post(ctx, path, body)` - POST requests with JSON body
-- `Put(ctx, path, body)` - PUT requests with JSON body
 - `Patch(ctx, path, body)` - PATCH requests with JSON body
 - `Delete(ctx, path)` - DELETE requests
 
@@ -169,6 +178,11 @@ Shared utility functions to eliminate code duplication:
 **Schema helpers:**
 - **`idOnlySchema(desc)`** - JSON schema for tools that only take an `id` parameter
 - **`paginatedListSchema()`** - JSON schema for list tools (page, page_size, name filter)
+- **`matchableResourceSchema(resourceName, includeID)`** - JSON schema for matchable resources (correspondents, document types) with name, match, matching_algorithm, is_insensitive fields
+
+**Shared types:**
+- **`matchableCreateParams`** - Common params struct for creating matchable resources
+- **`listParams`** - Common pagination and filter parameters
 
 **List query helpers:**
 - **`buildListPath(basePath, args)`** - Build URL path with query parameters from list args
@@ -181,6 +195,7 @@ All response formatting functions are centralized here:
 - **`formatConfig`** - Application configuration grouped by category
 - **`formatCorrespondent`** / **`formatCorrespondentList`** - Correspondent details and lists
 - **`formatCustomField`** / **`formatCustomFieldList`** - Custom field details and lists
+- **`formatDocumentType`** / **`formatDocumentTypeList`** - Document type details and lists
 - **`formatOpt[T]`** / **`formatOptJSON`** - Nullable field formatting helpers
 - **`formatDate`** / **`formatTaskLine`** - Date and task line formatting
 
@@ -410,6 +425,38 @@ Every new tool should have:
 ### `delete_custom_field` (`internal/tools/delete_custom_field.go`)
 
 - **Endpoint**: `DELETE /api/custom_fields/{id}/`
+- **Input**: `id` (required)
+- **Output**: Confirmation message
+
+### `list_document_types` (`internal/tools/list_document_types.go`)
+
+- **Endpoint**: `GET /api/document_types/`
+- **Input**: `page`, `page_size`, `name` (all optional)
+- **Output**: Paginated document type list
+- **Model**: `models.PaginatedList[models.DocumentType]`
+
+### `get_document_type` (`internal/tools/get_document_type.go`)
+
+- **Endpoint**: `GET /api/document_types/{id}/`
+- **Input**: `id` (required)
+- **Output**: Document type details with matching algorithm name
+- **Model**: `models.DocumentType`
+
+### `create_document_type` (`internal/tools/create_document_type.go`)
+
+- **Endpoint**: `POST /api/document_types/`
+- **Input**: `name` (required), `match`, `matching_algorithm`, `is_insensitive` (optional)
+- **Output**: Created document type details
+
+### `update_document_type` (`internal/tools/update_document_type.go`)
+
+- **Endpoint**: `PATCH /api/document_types/{id}/`
+- **Input**: `id` (required) + any document type fields
+- **Output**: Updated document type details
+
+### `delete_document_type` (`internal/tools/delete_document_type.go`)
+
+- **Endpoint**: `DELETE /api/document_types/{id}/`
 - **Input**: `id` (required)
 - **Output**: Confirmation message
 
