@@ -272,10 +272,19 @@ func buildListPath(
 		q.Set("name__icontains", *params.Name)
 	}
 
+	return appendQuery(basePath, q), nil
+}
+
+// appendQuery appends encoded query parameters to a base path.
+// Returns the base path unchanged if q is empty.
+func appendQuery(
+	basePath string,
+	q url.Values,
+) string {
 	if encoded := q.Encode(); encoded != "" {
-		return basePath + "?" + encoded, nil
+		return basePath + "?" + encoded
 	}
-	return basePath, nil
+	return basePath
 }
 
 // validateFilePath checks that a file path is safe and absolute.

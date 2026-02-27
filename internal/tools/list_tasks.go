@@ -93,9 +93,5 @@ func buildTaskListPath(
 		q.Set("task_id", *params.TaskID)
 	}
 
-	basePath := "/api/tasks/"
-	if encoded := q.Encode(); encoded != "" {
-		return basePath + "?" + encoded, nil
-	}
-	return basePath, nil
+	return appendQuery("/api/tasks/", q), nil
 }

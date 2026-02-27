@@ -156,9 +156,5 @@ func buildDocumentListPath(args json.RawMessage) (string, error) {
 		)
 	}
 
-	basePath := "/api/documents/"
-	if encoded := q.Encode(); encoded != "" {
-		return basePath + "?" + encoded, nil
-	}
-	return basePath, nil
+	return appendQuery("/api/documents/", q), nil
 }

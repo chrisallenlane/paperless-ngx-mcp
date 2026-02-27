@@ -93,9 +93,7 @@ func (t *ListDocumentNotes) Execute(
 			fmt.Sprintf("%d", *params.PageSize),
 		)
 	}
-	if encoded := q.Encode(); encoded != "" {
-		path += "?" + encoded
-	}
+	path = appendQuery(path, q)
 
 	body, err := doAPIRequest(ctx, t.client, path)
 	if err != nil {
