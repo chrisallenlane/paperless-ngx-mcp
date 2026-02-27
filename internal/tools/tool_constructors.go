@@ -165,6 +165,53 @@ func NewGetTask(c *client.Client) Tool {
 	}
 }
 
+// NewListTags creates a tool to list tags.
+func NewListTags(c *client.Client) Tool {
+	return &listTool[models.Tag]{
+		client: c,
+		desc: "List tags in Paperless-NGX " +
+			"with optional filtering by name",
+		schema:   paginatedListSchema(),
+		basePath: "/api/tags/",
+		format:   formatTagList,
+	}
+}
+
+// NewGetTag creates a tool to get a tag by ID.
+func NewGetTag(c *client.Client) Tool {
+	return &getTool[models.Tag]{
+		client:  c,
+		desc:    "Get a tag by ID from Paperless-NGX",
+		schema:  idOnlySchema("Tag ID"),
+		pathFmt: "/api/tags/%d/",
+		format: func(_ int, v *models.Tag) string {
+			return formatTag(v)
+		},
+	}
+}
+
+// NewUpdateTag creates a tool to update a tag.
+func NewUpdateTag(c *client.Client) Tool {
+	return &patchTool[models.Tag]{
+		client:  c,
+		desc:    "Update a tag in Paperless-NGX",
+		schema:  tagSchema(true),
+		pathFmt: "/api/tags/%d/",
+		format:  formatTag,
+	}
+}
+
+// NewDeleteTag creates a tool to delete a tag.
+func NewDeleteTag(c *client.Client) Tool {
+	return &deleteTool{
+		client:       c,
+		desc:         "Delete a tag from Paperless-NGX",
+		schema:       idOnlySchema("Tag ID to delete"),
+		pathFmt:      "/api/tags/%d/",
+		resourceName: "Tag",
+	}
+}
+
 // NewListStoragePaths creates a tool to list storage paths.
 func NewListStoragePaths(c *client.Client) Tool {
 	return &listTool[models.StoragePath]{

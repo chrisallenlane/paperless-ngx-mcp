@@ -57,6 +57,15 @@ var allToolTests = []toolTestEntry{
 
 	// Get (ID-based) tools
 	{
+		name: "GetTag",
+		newTool: func(c *client.Client) Tool {
+			return NewGetTag(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
 		name: "GetStoragePath",
 		newTool: func(c *client.Client) Tool {
 			return NewGetStoragePath(c)
@@ -152,6 +161,13 @@ var allToolTests = []toolTestEntry{
 		serverArgs: `{}`,
 	},
 	{
+		name: "ListTags",
+		newTool: func(c *client.Client) Tool {
+			return NewListTags(c)
+		},
+		serverArgs: `{}`,
+	},
+	{
 		name: "ListStoragePaths",
 		newTool: func(c *client.Client) Tool {
 			return NewListStoragePaths(c)
@@ -206,6 +222,14 @@ var allToolTests = []toolTestEntry{
 		required:   []string{"name"},
 	},
 	{
+		name: "CreateTag",
+		newTool: func(c *client.Client) Tool {
+			return NewCreateTag(c)
+		},
+		serverArgs: `{"name": "Test"}`,
+		required:   []string{"name"},
+	},
+	{
 		name: "CreateStoragePath",
 		newTool: func(c *client.Client) Tool {
 			return NewCreateStoragePath(c)
@@ -239,6 +263,16 @@ var allToolTests = []toolTestEntry{
 		name: "UpdateDocumentType",
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateDocumentType(c)
+		},
+		serverArgs:    `{"id": 1, "name": "Test"}`,
+		idArgsFmt:     `{"id": %d}`,
+		missingIDArgs: `{"name": "Test"}`,
+		required:      []string{"id"},
+	},
+	{
+		name: "UpdateTag",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateTag(c)
 		},
 		serverArgs:    `{"id": 1, "name": "Test"}`,
 		idArgsFmt:     `{"id": %d}`,
@@ -299,6 +333,15 @@ var allToolTests = []toolTestEntry{
 		name: "DeleteDocumentType",
 		newTool: func(c *client.Client) Tool {
 			return NewDeleteDocumentType(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "DeleteTag",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteTag(c)
 		},
 		serverArgs: `{"id": 1}`,
 		idArgsFmt:  `{"id": %d}`,
@@ -733,6 +776,58 @@ const documentTypeListResponse = `{
 
 // GET happy-path table tests.
 
+const tagResponse = `{
+	"id": 1,
+	"slug": "important",
+	"name": "Important",
+	"color": "#a6cee3",
+	"text_color": "#000000",
+	"match": "important",
+	"matching_algorithm": 1,
+	"is_insensitive": true,
+	"is_inbox_tag": false,
+	"document_count": 8,
+	"parent": null,
+	"children": [3, 5]
+}`
+
+const tagListResponse = `{
+	"count": 2,
+	"next": null,
+	"previous": null,
+	"all": [1, 2],
+	"results": [
+		{
+			"id": 1,
+			"slug": "important",
+			"name": "Important",
+			"color": "#a6cee3",
+			"text_color": "#000000",
+			"match": "important",
+			"matching_algorithm": 1,
+			"is_insensitive": true,
+			"is_inbox_tag": false,
+			"document_count": 8,
+			"parent": null,
+			"children": [3, 5]
+		},
+		{
+			"id": 2,
+			"slug": "inbox",
+			"name": "Inbox",
+			"color": "#ff0000",
+			"text_color": "#ffffff",
+			"match": "",
+			"matching_algorithm": 6,
+			"is_insensitive": true,
+			"is_inbox_tag": true,
+			"document_count": 3,
+			"parent": null,
+			"children": []
+		}
+	]
+}`
+
 const storagePathResponse = `{
 	"id": 1,
 	"slug": "invoices",
@@ -795,6 +890,28 @@ var getToolTests = []struct {
 	responseJSON string
 	checks       []string
 }{
+	{
+		name: "GetTag",
+		newTool: func(c *client.Client) Tool {
+			return NewGetTag(c)
+		},
+		path:         "/api/tags/1/",
+		args:         `{"id": 1}`,
+		responseJSON: tagResponse,
+		checks: []string{
+			"Tag (ID: 1)",
+			"Name: Important",
+			"Slug: important",
+			"Match: important",
+			"Matching Algorithm: 1 (Any word)",
+			"Case Insensitive: true",
+			"Document Count: 8",
+			"Color: #a6cee3",
+			"Text Color: #000000",
+			"Is Inbox Tag: false",
+			"Children: 3, 5",
+		},
+	},
 	{
 		name: "GetStoragePath",
 		newTool: func(c *client.Client) Tool {
@@ -1080,6 +1197,25 @@ var listToolTests = []struct {
 		nameFilterCheck: "Invoice",
 	},
 	{
+		name: "ListTags",
+		newTool: func(c *client.Client) Tool {
+			return NewListTags(c)
+		},
+		path:         "/api/tags/",
+		responseJSON: tagListResponse,
+		checks: []string{
+			"Tags: 2 total",
+			"Important (ID: 1)",
+			"8 documents",
+			"Inbox (ID: 2)",
+			"3 documents",
+			"[inbox]",
+		},
+		emptyMessage:    "No tags found.",
+		nameFilterName:  "important",
+		nameFilterCheck: "Important",
+	},
+	{
 		name: "ListStoragePaths",
 		newTool: func(c *client.Client) Tool {
 			return NewListStoragePaths(c)
@@ -1357,6 +1493,34 @@ var updateToolTests = []struct {
 		checks: []string{
 			"Document Type (ID: 1)",
 			"Name: Updated Type",
+		},
+	},
+	{
+		name: "UpdateTag",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateTag(c)
+		},
+		path:       "/api/tags/1/",
+		args:       `{"id": 1, "name": "Updated Tag"}`,
+		fieldName:  "name",
+		fieldValue: "Updated Tag",
+		responseJSON: `{
+			"id": 1,
+			"slug": "updated-tag",
+			"name": "Updated Tag",
+			"color": "#a6cee3",
+			"text_color": "#000000",
+			"match": "important",
+			"matching_algorithm": 1,
+			"is_insensitive": true,
+			"is_inbox_tag": false,
+			"document_count": 8,
+			"parent": null,
+			"children": []
+		}`,
+		checks: []string{
+			"Tag (ID: 1)",
+			"Name: Updated Tag",
 		},
 	},
 	{
