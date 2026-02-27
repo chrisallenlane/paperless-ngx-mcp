@@ -35,10 +35,16 @@ paperless-ngx-mcp/
 │   └── tools/                           # MCP tool implementations
 │       ├── tool.go                      # Tool interface definition
 │       ├── tool_factory.go              # Generic data-driven tool types
-│       ├── tool_constructors.go         # Constructor functions for all tools
+│       ├── tool_constructors_get.go     # Constructor functions: no-arg get + get-by-ID tools
+│       ├── tool_constructors_list.go    # Constructor functions: list tools
+│       ├── tool_constructors_create.go  # Constructor functions: create tools + validate funcs
+│       ├── tool_constructors_update.go  # Constructor functions: update tools
+│       ├── tool_constructors_delete.go  # Constructor functions: delete tools
 │       ├── helpers.go                   # Shared utility/HTTP helper functions
 │       ├── helpers_test.go              # Helper function tests
-│       ├── schemas.go                   # JSON schema builder functions
+│       ├── schemas.go                   # Shared schema helpers + base schema builders
+│       ├── schemas_resources.go         # Resource-specific schema builders
+│       ├── schemas_documents.go         # Large standalone schemas (document, config update)
 │       ├── format_helpers.go            # Shared formatting utilities and helpers
 │       ├── format_status.go             # System status formatter
 │       ├── format_config.go             # Application config formatter
@@ -165,8 +171,11 @@ formatter) rather than behavior. This eliminates per-tool boilerplate.
 - **`createTool[T]`** - POST for creating resources; calls a `validate` function to parse/validate args, then POSTs and calls `format(*T)`
 - **`deleteTool`** - DELETE by ID; calls `deleteByID`, returns confirmation string
 
-**Constructor functions** live in `tool_constructors.go` and instantiate these types
-with the appropriate configuration for each named tool.
+**Constructor functions** live in the `tool_constructors_*.go` files and instantiate
+these types with the appropriate configuration for each named tool. The files are
+organized by CRUD verb: `tool_constructors_get.go`, `tool_constructors_list.go`,
+`tool_constructors_create.go`, `tool_constructors_update.go`,
+`tool_constructors_delete.go`.
 
 ### Tool Registration (`internal/server/server.go`)
 
@@ -226,25 +235,33 @@ Shared utility functions to eliminate code duplication:
 - **`buildListPath(basePath, args)`** - Build URL path with query parameters from list args
 - **`appendQuery(basePath, q)`** - Append encoded query parameters to a base path; returns base path unchanged if q is empty
 
-### Schema Builders (`internal/tools/schemas.go`)
+### Schema Builders (`internal/tools/schemas*.go`)
 
-JSON schema builder functions, separated from helpers to keep concerns distinct:
+JSON schema builder functions are split across three files, separated from helpers
+to keep concerns distinct:
 
+**`schemas.go`** — shared helpers and base schema builders:
 - **`emptySchema()`** - Schema with no parameters (for tools like `get_status`, `get_next_asn`)
 - **`idOnlySchema(desc)`** - Schema with a single required `id` integer field
 - **`paginatedListSchema()`** - Schema for list tools (page, page_size, name filter)
 - **`paginationOnlySchema()`** - Schema for list tools without a name filter (page, page_size only); used by `list_saved_views` and `list_trash`
 - **`matchableResourceSchema(resourceName, includeID)`** - Schema for matchable resources (correspondents, document types) with name, match, matching_algorithm, is_insensitive fields; set `includeID` true for update tools
-- **`tagSchema(includeID)`** - Schema for tag tools with name, color, match, matching_algorithm, is_insensitive, is_inbox_tag, parent fields; set `includeID` true for update tools
-- **`storagePathSchema(includeID)`** - Schema for storage path tools with name, path, match, matching_algorithm, is_insensitive fields; set `includeID` true for update tools
-- **`taskListSchema()`** - Schema for the task list tool with status, task_name, type, task_id filters
-- **`savedViewSchema(includeID)`** - Schema for saved view tools with name, show_on_dashboard, show_in_sidebar, filter_rules (required for create) plus sort/display options; set `includeID` true for update tools
-- **`customFieldSchema(includeID)`** - Schema for custom field tools with name, data_type, extra_data fields
-- **`documentUpdateSchema()`** - Schema for the document update tool with all document fields
-- **`configUpdateSchema()`** - Schema for the config update tool with all config fields
 - **`addMatchableProps(props)`** - Adds match, matching_algorithm, is_insensitive fields to a schema properties map; used by multiple schema builders
 - **`addPaginationProps(props)`** - Adds page and page_size fields to a schema properties map
 - **`withIDForUpdate(props, idDesc, includeID, createRequired)`** - Helper that conditionally adds an `id` field and adjusts required fields; used by schema builders that serve both create and update tools
+- **`matchingAlgorithmDesc`** - Shared constant describing valid matching algorithm values
+
+**`schemas_resources.go`** — resource-specific schema builders:
+- **`tagSchema(includeID)`** - Schema for tag tools with name, color, match, matching_algorithm, is_insensitive, is_inbox_tag, parent fields; set `includeID` true for update tools
+- **`storagePathSchema(includeID)`** - Schema for storage path tools with name, path, match, matching_algorithm, is_insensitive fields; set `includeID` true for update tools
+- **`taskListSchema()`** - Schema for the task list tool with status, task_name, type, task_id filters
+- **`customFieldSchema(includeID)`** - Schema for custom field tools with name, data_type, extra_data fields
+- **`savedViewProps()`** - Internal helper that builds the common saved view properties map
+- **`savedViewSchema(includeID)`** - Schema for saved view tools with name, show_on_dashboard, show_in_sidebar, filter_rules (required for create) plus sort/display options; set `includeID` true for update tools
+
+**`schemas_documents.go`** — large standalone schemas:
+- **`documentUpdateSchema()`** - Schema for the document update tool with all document fields
+- **`configUpdateSchema()`** - Schema for the config update tool with all config fields
 
 ### Response Formatters (`internal/tools/format_*.go`)
 
@@ -294,9 +311,9 @@ make install   # Install to $GOPATH/bin
 
 Most tools are implemented using the data-driven factory types in `tool_factory.go`.
 Choose the appropriate factory type based on what the tool does, then add a constructor
-in `tool_constructors.go`. Only create a dedicated file if the tool has logic that
-cannot be expressed with the factory types (see `list_documents.go` and `list_tasks.go`
-for examples).
+in the matching `tool_constructors_<verb>.go` file. Only create a dedicated file if
+the tool has logic that cannot be expressed with the factory types (see
+`list_documents.go` and `list_tasks.go` for examples).
 
 ### 1. Choose the factory type
 
@@ -308,7 +325,7 @@ for examples).
 - **`createTool[T]`** - POST for creating resources; requires a `validate` function (e.g., `create_correspondent`, `create_tag`, `create_storage_path`)
 - **`deleteTool`** - DELETE by ID (e.g., `delete_correspondent`, `delete_tag`, `delete_storage_path`)
 
-### 2. Add a constructor in `internal/tools/tool_constructors.go`
+### 2. Add a constructor in the appropriate `internal/tools/tool_constructors_<verb>.go`
 
 ```go
 // NewGetMyResource creates a tool to get a my-resource by ID.
@@ -380,26 +397,27 @@ Every new tool should have:
 
 ### Code Organization
 - Keep it simple - prefer standard library over dependencies
-- Use factory types in `tool_factory.go` + constructors in `tool_constructors.go` for standard CRUD tools
+- Use factory types in `tool_factory.go` + constructors in `tool_constructors_<verb>.go` for standard CRUD tools
 - Create dedicated files only for tools with non-standard logic (custom URL construction, non-JSON content types)
 - Shared HTTP/operation logic in `helpers.go`
-- JSON schema builders in `schemas.go`
+- JSON schema builders in `schemas.go`, `schemas_resources.go`, `schemas_documents.go`
 - Response formatting split into per-domain `format_*.go` files; shared utilities in `format_helpers.go`
 - Type definitions in `models.go`
 
 ## Current Tools
 
-Most tools are constructed via factory types in `tool_constructors.go`. Exceptions
-are noted below.
+Most tools are constructed via factory types in the `tool_constructors_*.go` files.
+Dedicated per-tool files are used only for tools with non-standard logic; these are
+noted below.
 
-### `get_status` (`tool_constructors.go` — `NewGetStatus`)
+### `get_status` (`tool_constructors_get.go` — `NewGetStatus`)
 
 - **Endpoint**: `GET /api/status/`
 - **Input**: None
 - **Output**: Formatted status summary
 - **Model**: `models.SystemStatus`
 
-### `get_config` (`tool_constructors.go` — `NewGetConfig`)
+### `get_config` (`tool_constructors_get.go` — `NewGetConfig`)
 
 - **Endpoint**: `GET /api/config/`
 - **Input**: None
@@ -407,107 +425,107 @@ are noted below.
 - **Model**: `models.ApplicationConfiguration`
 - **Note**: Uses `noArgGetToolRaw` because response is a JSON array; process function takes the first element
 
-### `update_config` (`tool_constructors.go` — `NewUpdateConfig`)
+### `update_config` (`tool_constructors_update.go` — `NewUpdateConfig`)
 
 - **Endpoint**: `PATCH /api/config/{id}/`
 - **Input**: `id` (required) + any config fields
 - **Output**: Updated config summary
 - **Note**: Only included fields are modified; `app_logo` skipped (binary upload)
 
-### `list_correspondents` (`tool_constructors.go` — `NewListCorrespondents`)
+### `list_correspondents` (`tool_constructors_list.go` — `NewListCorrespondents`)
 
 - **Endpoint**: `GET /api/correspondents/`
 - **Input**: `page`, `page_size`, `name` (all optional)
 - **Output**: Paginated correspondent list
 - **Model**: `models.PaginatedList[models.Correspondent]`
 
-### `get_correspondent` (`tool_constructors.go` — `NewGetCorrespondent`)
+### `get_correspondent` (`tool_constructors_get.go` — `NewGetCorrespondent`)
 
 - **Endpoint**: `GET /api/correspondents/{id}/`
 - **Input**: `id` (required)
 - **Output**: Correspondent details with matching algorithm name
 - **Model**: `models.Correspondent`
 
-### `create_correspondent` (`tool_constructors.go` — `NewCreateCorrespondent`)
+### `create_correspondent` (`tool_constructors_create.go` — `NewCreateCorrespondent`)
 
 - **Endpoint**: `POST /api/correspondents/`
 - **Input**: `name` (required), `match`, `matching_algorithm`, `is_insensitive` (optional)
 - **Output**: Created correspondent details
 - **Note**: Uses `createTool[T]` with `validateMatchableCreate`
 
-### `update_correspondent` (`tool_constructors.go` — `NewUpdateCorrespondent`)
+### `update_correspondent` (`tool_constructors_update.go` — `NewUpdateCorrespondent`)
 
 - **Endpoint**: `PATCH /api/correspondents/{id}/`
 - **Input**: `id` (required) + any correspondent fields
 - **Output**: Updated correspondent details
 
-### `delete_correspondent` (`tool_constructors.go` — `NewDeleteCorrespondent`)
+### `delete_correspondent` (`tool_constructors_delete.go` — `NewDeleteCorrespondent`)
 
 - **Endpoint**: `DELETE /api/correspondents/{id}/`
 - **Input**: `id` (required)
 - **Output**: Confirmation message
 
-### `list_custom_fields` (`tool_constructors.go` — `NewListCustomFields`)
+### `list_custom_fields` (`tool_constructors_list.go` — `NewListCustomFields`)
 
 - **Endpoint**: `GET /api/custom_fields/`
 - **Input**: `page`, `page_size`, `name` (all optional)
 - **Output**: Paginated custom field list
 - **Model**: `models.PaginatedList[models.CustomField]`
 
-### `get_custom_field` (`tool_constructors.go` — `NewGetCustomField`)
+### `get_custom_field` (`tool_constructors_get.go` — `NewGetCustomField`)
 
 - **Endpoint**: `GET /api/custom_fields/{id}/`
 - **Input**: `id` (required)
 - **Output**: Custom field details with extra data
 - **Model**: `models.CustomField`
 
-### `create_custom_field` (`tool_constructors.go` — `NewCreateCustomField`)
+### `create_custom_field` (`tool_constructors_create.go` — `NewCreateCustomField`)
 
 - **Endpoint**: `POST /api/custom_fields/`
 - **Input**: `name`, `data_type` (required), `extra_data` (optional)
 - **Output**: Created custom field details
 - **Note**: Uses `createTool[T]` with `validateCreateCustomField`; builds explicit request body to handle optional `extra_data`
 
-### `update_custom_field` (`tool_constructors.go` — `NewUpdateCustomField`)
+### `update_custom_field` (`tool_constructors_update.go` — `NewUpdateCustomField`)
 
 - **Endpoint**: `PATCH /api/custom_fields/{id}/`
 - **Input**: `id` (required) + any custom field fields
 - **Output**: Updated custom field details
 
-### `delete_custom_field` (`tool_constructors.go` — `NewDeleteCustomField`)
+### `delete_custom_field` (`tool_constructors_delete.go` — `NewDeleteCustomField`)
 
 - **Endpoint**: `DELETE /api/custom_fields/{id}/`
 - **Input**: `id` (required)
 - **Output**: Confirmation message
 
-### `list_document_types` (`tool_constructors.go` — `NewListDocumentTypes`)
+### `list_document_types` (`tool_constructors_list.go` — `NewListDocumentTypes`)
 
 - **Endpoint**: `GET /api/document_types/`
 - **Input**: `page`, `page_size`, `name` (all optional)
 - **Output**: Paginated document type list
 - **Model**: `models.PaginatedList[models.DocumentType]`
 
-### `get_document_type` (`tool_constructors.go` — `NewGetDocumentType`)
+### `get_document_type` (`tool_constructors_get.go` — `NewGetDocumentType`)
 
 - **Endpoint**: `GET /api/document_types/{id}/`
 - **Input**: `id` (required)
 - **Output**: Document type details with matching algorithm name
 - **Model**: `models.DocumentType`
 
-### `create_document_type` (`tool_constructors.go` — `NewCreateDocumentType`)
+### `create_document_type` (`tool_constructors_create.go` — `NewCreateDocumentType`)
 
 - **Endpoint**: `POST /api/document_types/`
 - **Input**: `name` (required), `match`, `matching_algorithm`, `is_insensitive` (optional)
 - **Output**: Created document type details
 - **Note**: Uses `createTool[T]` with `validateMatchableCreate`
 
-### `update_document_type` (`tool_constructors.go` — `NewUpdateDocumentType`)
+### `update_document_type` (`tool_constructors_update.go` — `NewUpdateDocumentType`)
 
 - **Endpoint**: `PATCH /api/document_types/{id}/`
 - **Input**: `id` (required) + any document type fields
 - **Output**: Updated document type details
 
-### `delete_document_type` (`tool_constructors.go` — `NewDeleteDocumentType`)
+### `delete_document_type` (`tool_constructors_delete.go` — `NewDeleteDocumentType`)
 
 - **Endpoint**: `DELETE /api/document_types/{id}/`
 - **Input**: `id` (required)
@@ -521,40 +539,40 @@ are noted below.
 - **Model**: `models.PaginatedList[models.Document]`
 - **Note**: Dedicated file because document filtering uses custom URL parameters beyond standard pagination
 
-### `get_document` (`tool_constructors.go` — `NewGetDocument`)
+### `get_document` (`tool_constructors_get.go` — `NewGetDocument`)
 
 - **Endpoint**: `GET /api/documents/{id}/`
 - **Input**: `id` (required)
 - **Output**: Full document details including custom fields and content preview
 - **Model**: `models.Document`
 
-### `update_document` (`tool_constructors.go` — `NewUpdateDocument`)
+### `update_document` (`tool_constructors_update.go` — `NewUpdateDocument`)
 
 - **Endpoint**: `PATCH /api/documents/{id}/`
 - **Input**: `id` (required) + `title`, `correspondent`, `document_type`, `storage_path`, `tags`, `archive_serial_number`, `created`, `custom_fields` (all optional)
 - **Output**: Updated document details
 
-### `delete_document` (`tool_constructors.go` — `NewDeleteDocument`)
+### `delete_document` (`tool_constructors_delete.go` — `NewDeleteDocument`)
 
 - **Endpoint**: `DELETE /api/documents/{id}/`
 - **Input**: `id` (required)
 - **Output**: Confirmation message
 
-### `get_document_metadata` (`tool_constructors.go` — `NewGetDocumentMetadata`)
+### `get_document_metadata` (`tool_constructors_get.go` — `NewGetDocumentMetadata`)
 
 - **Endpoint**: `GET /api/documents/{id}/metadata/`
 - **Input**: `id` (required)
 - **Output**: File metadata (checksums, sizes, MIME type, archive version, OCR language)
 - **Model**: `models.DocumentMetadata`
 
-### `get_document_suggestions` (`tool_constructors.go` — `NewGetDocumentSuggestions`)
+### `get_document_suggestions` (`tool_constructors_get.go` — `NewGetDocumentSuggestions`)
 
 - **Endpoint**: `GET /api/documents/{id}/suggestions/`
 - **Input**: `id` (required)
 - **Output**: AI-generated suggestions (correspondents, document types, storage paths, tags, dates)
 - **Model**: `models.DocumentSuggestions`
 
-### `get_next_asn` (`tool_constructors.go` — `NewGetNextASN`)
+### `get_next_asn` (`tool_constructors_get.go` — `NewGetNextASN`)
 
 - **Endpoint**: `GET /api/documents/next_asn/`
 - **Input**: None
@@ -576,100 +594,100 @@ are noted below.
 - **Output**: Confirmation with save path, size, and content type
 - **Note**: Dedicated file because it streams response body to file; validates `save_path` with `validateFilePath`
 
-### `list_tags` (`tool_constructors.go` — `NewListTags`)
+### `list_tags` (`tool_constructors_list.go` — `NewListTags`)
 
 - **Endpoint**: `GET /api/tags/`
 - **Input**: `page`, `page_size`, `name` (all optional)
 - **Output**: Paginated tag list with inbox flag indicator
 - **Model**: `models.PaginatedList[models.Tag]`
 
-### `get_tag` (`tool_constructors.go` — `NewGetTag`)
+### `get_tag` (`tool_constructors_get.go` — `NewGetTag`)
 
 - **Endpoint**: `GET /api/tags/{id}/`
 - **Input**: `id` (required)
 - **Output**: Tag details including color, text color, inbox flag, parent, and children
 - **Model**: `models.Tag`
 
-### `create_tag` (`tool_constructors.go` — `NewCreateTag`)
+### `create_tag` (`tool_constructors_create.go` — `NewCreateTag`)
 
 - **Endpoint**: `POST /api/tags/`
 - **Input**: `name` (required), `color`, `match`, `matching_algorithm`, `is_insensitive`, `is_inbox_tag`, `parent` (all optional)
 - **Output**: Created tag details
 - **Note**: Uses `createTool[T]` with `validateCreateTag`
 
-### `update_tag` (`tool_constructors.go` — `NewUpdateTag`)
+### `update_tag` (`tool_constructors_update.go` — `NewUpdateTag`)
 
 - **Endpoint**: `PATCH /api/tags/{id}/`
 - **Input**: `id` (required) + any tag fields
 - **Output**: Updated tag details
 
-### `delete_tag` (`tool_constructors.go` — `NewDeleteTag`)
+### `delete_tag` (`tool_constructors_delete.go` — `NewDeleteTag`)
 
 - **Endpoint**: `DELETE /api/tags/{id}/`
 - **Input**: `id` (required)
 - **Output**: Confirmation message
 
-### `list_storage_paths` (`tool_constructors.go` — `NewListStoragePaths`)
+### `list_storage_paths` (`tool_constructors_list.go` — `NewListStoragePaths`)
 
 - **Endpoint**: `GET /api/storage_paths/`
 - **Input**: `page`, `page_size`, `name` (all optional)
 - **Output**: Paginated storage path list
 - **Model**: `models.PaginatedList[models.StoragePath]`
 
-### `get_storage_path` (`tool_constructors.go` — `NewGetStoragePath`)
+### `get_storage_path` (`tool_constructors_get.go` — `NewGetStoragePath`)
 
 - **Endpoint**: `GET /api/storage_paths/{id}/`
 - **Input**: `id` (required)
 - **Output**: Storage path details including path template and matching fields
 - **Model**: `models.StoragePath`
 
-### `create_storage_path` (`tool_constructors.go` — `NewCreateStoragePath`)
+### `create_storage_path` (`tool_constructors_create.go` — `NewCreateStoragePath`)
 
 - **Endpoint**: `POST /api/storage_paths/`
 - **Input**: `name`, `path` (both required), `match`, `matching_algorithm`, `is_insensitive` (all optional)
 - **Output**: Created storage path details
 - **Note**: Uses `createTool[T]` with `validateCreateStoragePath`; validates that both `name` and `path` are non-empty
 
-### `update_storage_path` (`tool_constructors.go` — `NewUpdateStoragePath`)
+### `update_storage_path` (`tool_constructors_update.go` — `NewUpdateStoragePath`)
 
 - **Endpoint**: `PATCH /api/storage_paths/{id}/`
 - **Input**: `id` (required) + any storage path fields
 - **Output**: Updated storage path details
 
-### `delete_storage_path` (`tool_constructors.go` — `NewDeleteStoragePath`)
+### `delete_storage_path` (`tool_constructors_delete.go` — `NewDeleteStoragePath`)
 
 - **Endpoint**: `DELETE /api/storage_paths/{id}/`
 - **Input**: `id` (required)
 - **Output**: Confirmation message
 
-### `list_saved_views` (`tool_constructors.go` — `NewListSavedViews`)
+### `list_saved_views` (`tool_constructors_list.go` — `NewListSavedViews`)
 
 - **Endpoint**: `GET /api/saved_views/`
 - **Input**: `page`, `page_size` (both optional; no name filter)
 - **Output**: Paginated saved view list with dashboard/sidebar flags
 - **Model**: `models.PaginatedList[models.SavedView]`
 
-### `get_saved_view` (`tool_constructors.go` — `NewGetSavedView`)
+### `get_saved_view` (`tool_constructors_get.go` — `NewGetSavedView`)
 
 - **Endpoint**: `GET /api/saved_views/{id}/`
 - **Input**: `id` (required)
 - **Output**: Saved view details including all filter rules with human-readable rule type names
 - **Model**: `models.SavedView`
 
-### `create_saved_view` (`tool_constructors.go` — `NewCreateSavedView`)
+### `create_saved_view` (`tool_constructors_create.go` — `NewCreateSavedView`)
 
 - **Endpoint**: `POST /api/saved_views/`
 - **Input**: `name`, `show_on_dashboard`, `show_in_sidebar`, `filter_rules` (all required); `sort_field`, `sort_reverse`, `page_size`, `display_mode` (all optional)
 - **Output**: Created saved view details
 - **Note**: Uses `createTool[T]` with `validateCreateSavedView`
 
-### `update_saved_view` (`tool_constructors.go` — `NewUpdateSavedView`)
+### `update_saved_view` (`tool_constructors_update.go` — `NewUpdateSavedView`)
 
 - **Endpoint**: `PATCH /api/saved_views/{id}/`
 - **Input**: `id` (required) + any saved view fields
 - **Output**: Updated saved view details
 
-### `delete_saved_view` (`tool_constructors.go` — `NewDeleteSavedView`)
+### `delete_saved_view` (`tool_constructors_delete.go` — `NewDeleteSavedView`)
 
 - **Endpoint**: `DELETE /api/saved_views/{id}/`
 - **Input**: `id` (required)
@@ -697,7 +715,7 @@ are noted below.
 - **Output**: Confirmation with the updated note list for the document
 - **Note**: Dedicated file because the note ID is passed as a query parameter (not path segment), the endpoint is nested under a document ID, and it returns HTTP 200 (not 204) with the remaining notes list
 
-### `get_statistics` (`tool_constructors.go` — `NewGetStatistics`)
+### `get_statistics` (`tool_constructors_get.go` — `NewGetStatistics`)
 
 - **Endpoint**: `GET /api/statistics/`
 - **Input**: None
@@ -712,14 +730,14 @@ are noted below.
 - **Model**: `[]models.Task` (bare array, not paginated)
 - **Note**: Dedicated file because the endpoint returns a bare JSON array (not paginated) and filtering uses custom query parameters
 
-### `get_task` (`tool_constructors.go` — `NewGetTask`)
+### `get_task` (`tool_constructors_get.go` — `NewGetTask`)
 
 - **Endpoint**: `GET /api/tasks/{id}/`
 - **Input**: `id` (required)
 - **Output**: Task details including UUID, status, type, file name, dates, result, and related document
 - **Model**: `models.Task`
 
-### `list_trash` (`tool_constructors.go` — `NewListTrash`)
+### `list_trash` (`tool_constructors_list.go` — `NewListTrash`)
 
 - **Endpoint**: `GET /api/trash/`
 - **Input**: `page`, `page_size` (both optional; no name filter)
