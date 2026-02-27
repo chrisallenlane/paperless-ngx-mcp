@@ -26,7 +26,8 @@ paperless-ngx-mcp/
 │   │   ├── client.go          # HTTP client with request helpers
 │   │   └── client_test.go     # Client tests
 │   ├── models/                # Paperless-NGX data structures
-│   │   └── models.go          # Domain models
+│   │   ├── models.go          # Domain models
+│   │   └── models_test.go     # Model tests
 │   ├── server/                # MCP server implementation
 │   │   ├── server.go          # JSON-RPC server, request routing
 │   │   ├── server_test.go     # Protocol tests
@@ -34,7 +35,9 @@ paperless-ngx-mcp/
 │   └── tools/                 # MCP tool implementations
 │       ├── tool.go            # Tool interface definition
 │       ├── helpers.go         # Shared utility functions
-│       └── helpers_test.go    # Helper function tests
+│       ├── helpers_test.go    # Helper function tests
+│       ├── get_status.go      # System status tool
+│       └── get_status_test.go # Status tool tests
 ├── Makefile                   # Build automation
 ├── CLAUDE.md                  # This file
 ├── README.md                  # User-facing documentation
@@ -268,6 +271,15 @@ Every new tool should have:
 - One tool per file
 - Shared logic in helpers.go
 - Type definitions in models.go
+
+## Current Tools
+
+### `get_status` (`internal/tools/get_status.go`)
+
+- **Endpoint**: `GET /api/status/`
+- **Input**: None (no parameters)
+- **Output**: Human-readable formatted status summary
+- **Model**: `models.SystemStatus` — parses version, storage, database, and task statuses
 
 ## Configuration
 

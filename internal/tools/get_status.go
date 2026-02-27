@@ -43,7 +43,7 @@ func (t *GetStatus) Execute(
 	}
 
 	var status models.SystemStatus
-	if err := ParseJSONResponse(body, &status); err != nil {
+	if err := json.Unmarshal(body, &status); err != nil {
 		return "", fmt.Errorf(
 			"failed to parse status response: %w",
 			err,
@@ -53,9 +53,11 @@ func (t *GetStatus) Execute(
 	return formatStatus(&status), nil
 }
 
+const bytesPerTB = 1024 * 1024 * 1024 * 1024
+
 func formatStatus(s *models.SystemStatus) string {
-	totalTB := float64(s.Storage.Total) / (1024 * 1024 * 1024 * 1024)
-	availTB := float64(s.Storage.Available) / (1024 * 1024 * 1024 * 1024)
+	totalTB := float64(s.Storage.Total) / bytesPerTB
+	availTB := float64(s.Storage.Available) / bytesPerTB
 
 	out := fmt.Sprintf(
 		"Paperless-NGX Status\nVersion: %s\nOS: %s\nInstall: %s\n\n"+

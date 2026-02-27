@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
@@ -102,8 +103,12 @@ func TestGetStatus_Execute(t *testing.T) {
 	}
 
 	for _, check := range checks {
-		if !containsSubstring(result, check) {
-			t.Errorf("Output missing %q.\nGot:\n%s", check, result)
+		if !strings.Contains(result, check) {
+			t.Errorf(
+				"Output missing %q.\nGot:\n%s",
+				check,
+				result,
+			)
 		}
 	}
 }
@@ -131,7 +136,14 @@ func TestGetStatus_Execute_ServerError(t *testing.T) {
 		json.RawMessage(`{}`),
 	)
 	if err == nil {
-		t.Error("Expected error for server error response")
+		t.Fatal("Expected error for server error response")
+	}
+
+	if !strings.Contains(err.Error(), "500") {
+		t.Errorf(
+			"Error should mention status code, got: %s",
+			err.Error(),
+		)
 	}
 }
 
@@ -158,13 +170,4 @@ func TestGetStatus_InputSchema(t *testing.T) {
 	if !ok || schemaType != "object" {
 		t.Errorf("Schema type = %v, want object", schema["type"])
 	}
-}
-
-func containsSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

@@ -27,7 +27,9 @@ paperless-ngx-mcp/
 │   ├── server/               # MCP JSON-RPC server
 │   └── tools/                # Tool implementations
 ├── Makefile                  # Build automation
-└── README.md                 # This file
+├── CLAUDE.md                 # Development guidance
+├── README.md                 # This file
+└── SETUP.md                  # Setup instructions
 ```
 
 ## Getting Started
@@ -62,6 +64,16 @@ The MCP server communicates via stdin/stdout:
 ```
 
 See `SETUP.md` for integration with Claude Code and Claude Desktop.
+
+## Available Tools
+
+### `get_status`
+
+Returns the current system status of the Paperless-NGX server, including:
+- Version, OS, and install type
+- Storage usage
+- Database, Redis, and Celery status
+- Index, classifier, and sanity check status with last-run timestamps
 
 ## Development
 
