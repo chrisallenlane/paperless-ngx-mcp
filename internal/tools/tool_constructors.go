@@ -152,6 +152,19 @@ func NewListDocumentTypes(c *client.Client) Tool {
 	}
 }
 
+// NewGetTask creates a tool to get a background task by ID.
+func NewGetTask(c *client.Client) Tool {
+	return &getTool[models.Task]{
+		client:  c,
+		desc:    "Get a background task by ID from Paperless-NGX",
+		schema:  idOnlySchema("Task ID"),
+		pathFmt: "/api/tasks/%d/",
+		format: func(_ int, v *models.Task) string {
+			return formatTask(v)
+		},
+	}
+}
+
 // NewListTrash creates a tool to list soft-deleted documents.
 func NewListTrash(c *client.Client) Tool {
 	return &listTool[models.Document]{

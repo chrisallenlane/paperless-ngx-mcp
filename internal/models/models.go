@@ -183,6 +183,21 @@ type DocumentMetadata struct {
 	Lang                 string      `json:"lang"`
 }
 
+// Task represents a Paperless-NGX background processing task.
+type Task struct {
+	ID              int     `json:"id"`
+	TaskID          string  `json:"task_id"`
+	TaskName        *string `json:"task_name"`
+	TaskFileName    *string `json:"task_file_name"`
+	DateCreated     *string `json:"date_created"`
+	DateDone        *string `json:"date_done"`
+	Type            string  `json:"type"`
+	Status          string  `json:"status"`
+	Result          *string `json:"result"`
+	Acknowledged    bool    `json:"acknowledged"`
+	RelatedDocument *string `json:"related_document"`
+}
+
 // DocumentSuggestions represents AI-generated suggestions for a document.
 type DocumentSuggestions struct {
 	Correspondents []int    `json:"correspondents"`
