@@ -22,6 +22,24 @@ func idOnlySchema(desc string) map[string]interface{} {
 	}
 }
 
+// paginationOnlySchema returns an input schema with only page and
+// page_size parameters (no name filter).
+func paginationOnlySchema() map[string]interface{} {
+	return map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"page": map[string]interface{}{
+				"type":        "integer",
+				"description": "Page number (default 1)",
+			},
+			"page_size": map[string]interface{}{
+				"type":        "integer",
+				"description": "Results per page (default 25)",
+			},
+		},
+	}
+}
+
 // paginatedListSchema returns an input schema for paginated list endpoints.
 func paginatedListSchema() map[string]interface{} {
 	return map[string]interface{}{
