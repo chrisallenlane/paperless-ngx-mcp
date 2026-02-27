@@ -226,6 +226,22 @@ type Task struct {
 	RelatedDocument *string `json:"related_document"`
 }
 
+// Note represents a note attached to a Paperless-NGX document.
+type Note struct {
+	ID      int       `json:"id"`
+	Note    string    `json:"note"`
+	Created string    `json:"created"`
+	User    BasicUser `json:"user"`
+}
+
+// BasicUser represents a minimal Paperless-NGX user reference.
+type BasicUser struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
 // DocumentSuggestions represents AI-generated suggestions for a document.
 type DocumentSuggestions struct {
 	Correspondents []int    `json:"correspondents"`
