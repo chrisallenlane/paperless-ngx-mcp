@@ -156,6 +156,52 @@ func TestGetDocumentType_Execute_InvalidID(t *testing.T) {
 	}
 }
 
+func TestGetDocumentType_Execute_UnknownAlgorithm(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{
+					"id": 3,
+					"slug": "contract",
+					"name": "Contract",
+					"match": "",
+					"matching_algorithm": 99,
+					"is_insensitive": false,
+					"document_count": 0
+				}`))
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewGetDocumentType(c)
+
+	result, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(`{"id": 3}`),
+	)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if !strings.Contains(result, "Unknown") {
+		t.Errorf(
+			"Output should show Unknown algorithm.\nGot:\n%s",
+			result,
+		)
+	}
+}
+
 func TestGetDocumentType_Execute_ServerError(t *testing.T) {
 	server := httptest.NewServer(
 		http.HandlerFunc(
