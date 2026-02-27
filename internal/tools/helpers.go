@@ -1,3 +1,4 @@
+// Package tools provides MCP tool implementations.
 package tools
 
 import (
@@ -7,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/chrisallenlane/go-mcp-server/internal/client"
+	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
 )
 
 // doAPIRequest performs an API request and returns the response body.

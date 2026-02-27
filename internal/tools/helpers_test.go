@@ -2,11 +2,14 @@ package tools
 
 import (
 	"testing"
-
-	"github.com/chrisallenlane/go-mcp-server/internal/models"
 )
 
 func TestParseJSONResponse(t *testing.T) {
+	type testItem struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+
 	tests := []struct {
 		name      string
 		jsonData  string
@@ -31,17 +34,19 @@ func TestParseJSONResponse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var result models.Item
+			var result testItem
 			err := ParseJSONResponse([]byte(tt.jsonData), &result)
 
 			if tt.expectErr && err == nil {
 				t.Error("ParseJSONResponse() expected error, got nil")
 			}
 			if !tt.expectErr && err != nil {
-				t.Errorf("ParseJSONResponse() unexpected error: %v", err)
+				t.Errorf(
+					"ParseJSONResponse() unexpected error: %v",
+					err,
+				)
 			}
 
-			// For valid JSON, verify it was parsed correctly
 			if !tt.expectErr && err == nil {
 				if result.ID != 1 || result.Name != "Test Item" {
 					t.Errorf(

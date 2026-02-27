@@ -1,10 +1,13 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with this MCP server template.
+This file provides guidance to Claude Code when working with this project.
 
 ## Project Overview
 
-**go-mcp-server** is a template for building Model Context Protocol (MCP) servers in Go. It provides a complete, production-ready foundation for creating MCP servers that integrate external services with Claude and other AI assistants.
+**paperless-ngx-mcp** is a Model Context Protocol (MCP) server for
+[Paperless-NGX](https://docs.paperless-ngx.com/), written in Go. It provides
+tools for querying and managing a Paperless-NGX document management system
+through Claude and other AI assistants.
 
 **Tech Stack:**
 - **Language**: Go 1.21+
@@ -14,31 +17,28 @@ This file provides guidance to Claude Code when working with this MCP server tem
 ## Project Structure
 
 ```
-go-mcp-server/
+paperless-ngx-mcp/
 ├── cmd/
-│   └── go-mcp-server/        # Main application
-│       └── main.go          # Entry point, configuration, initialization
-├── internal/                # Private application packages
-│   ├── client/              # HTTP client (customize for your API)
-│   │   ├── client.go        # HTTP client with request helpers
-│   │   └── client_test.go   # Client tests
-│   ├── models/              # Type-safe data structures
-│   │   ├── models.go        # Placeholder models (replace with yours)
-│   │   └── models_test.go   # JSON marshaling tests
-│   ├── server/              # MCP server implementation
-│   │   ├── server.go        # JSON-RPC server, request routing
-│   │   ├── server_test.go   # Protocol tests
-│   │   └── types.go         # JSON-RPC request/response types
-│   └── tools/               # MCP tool implementations
-│       ├── tool.go          # Tool interface definition
-│       ├── helpers.go       # Shared utility functions
-│       ├── helpers_test.go  # Helper function tests
-│       ├── echo.go          # Example tool
-│       └── echo_test.go     # Example tool tests
-├── Makefile                 # Build automation
-├── CLAUDE.md                # This file
-├── README.md                # User-facing documentation
-└── SETUP.md                 # Setup instructions
+│   └── paperless-ngx-mcp/     # Main application
+│       └── main.go            # Entry point, configuration, initialization
+├── internal/                  # Private application packages
+│   ├── client/                # HTTP client for Paperless-NGX API
+│   │   ├── client.go          # HTTP client with request helpers
+│   │   └── client_test.go     # Client tests
+│   ├── models/                # Paperless-NGX data structures
+│   │   └── models.go          # Domain models
+│   ├── server/                # MCP server implementation
+│   │   ├── server.go          # JSON-RPC server, request routing
+│   │   ├── server_test.go     # Protocol tests
+│   │   └── types.go           # JSON-RPC request/response types
+│   └── tools/                 # MCP tool implementations
+│       ├── tool.go            # Tool interface definition
+│       ├── helpers.go         # Shared utility functions
+│       └── helpers_test.go    # Helper function tests
+├── Makefile                   # Build automation
+├── CLAUDE.md                  # This file
+├── README.md                  # User-facing documentation
+└── SETUP.md                   # Setup instructions
 ```
 
 This follows the **standard Go project layout**:
@@ -51,9 +51,9 @@ This follows the **standard Go project layout**:
 
 The server implements MCP via **JSON-RPC 2.0 over stdio**:
 
-1. **Stdin** → JSON-RPC requests from Claude
-2. **Process** → Route to handlers, execute tools
-3. **Stdout** → JSON-RPC responses back to Claude
+1. **Stdin** - JSON-RPC requests from Claude
+2. **Process** - Route to handlers, execute tools
+3. **Stdout** - JSON-RPC responses back to Claude
 
 **Key Methods:**
 - `initialize` - Handshake, declare capabilities
@@ -67,7 +67,7 @@ Claude → stdin → Scanner → JSON unmarshal → handleRequest() → execute 
 
 ### HTTP Client (`internal/client/client.go`)
 
-Generic HTTP client for making API requests. Customize for your use case:
+HTTP client for Paperless-NGX API requests:
 
 **HTTP Methods:**
 - `Get(ctx, path)` - GET requests
@@ -108,13 +108,12 @@ The server automatically discovers and exposes all registered tools via `tools/l
 
 ### Type-Safe Models (`internal/models/models.go`)
 
-Replace the placeholder models with your domain-specific types:
+Domain models for Paperless-NGX API responses:
 
 ```go
-type MyResource struct {
-    ID          int    `json:"id"`
-    Name        string `json:"name"`
-    Description string `json:"description,omitempty"`
+type SystemStatus struct {
+    PNGXVersion string `json:"pngx_version"`
+    // ...
 }
 ```
 
@@ -135,51 +134,28 @@ Shared utility functions to eliminate code duplication:
 ### Building
 
 ```bash
-# Build executable
 make build
-
-# Output: dist/go-mcp-server
+# Output: dist/paperless-ngx-mcp
 ```
 
 ### Testing
 
 ```bash
-# Format code
-make fmt
-
-# Lint code
-make lint
-
-# Run vet
-make vet
-
-# Run tests
-make test
-
-# Run tests with coverage report
-make coverage
-
-# All checks (format, lint, vet, test)
-make check
+make fmt       # Format code
+make lint      # Lint code
+make vet       # Run vet
+make test      # Run tests
+make coverage  # Tests with coverage report
+make check     # All checks (format, lint, vet, test)
 ```
 
 ### Installing
 
 ```bash
-# Install to $GOPATH/bin
-make install
-```
-
-### Cleaning
-
-```bash
-# Remove built executables
-make clean
+make install   # Install to $GOPATH/bin
 ```
 
 ## Adding a New Tool
-
-Follow this pattern:
 
 ### 1. Create the tool file in `internal/tools/`
 
@@ -190,7 +166,7 @@ import (
     "context"
     "encoding/json"
     "fmt"
-    "github.com/yourusername/go-mcp-server/internal/client"
+    "github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
 )
 
 type MyTool struct {
@@ -219,7 +195,6 @@ func (t *MyTool) InputSchema() map[string]interface{} {
 }
 
 func (t *MyTool) Execute(ctx context.Context, args json.RawMessage) (string, error) {
-    // 1. Parse arguments
     var params struct {
         ParamName string `json:"paramName"`
     }
@@ -227,24 +202,20 @@ func (t *MyTool) Execute(ctx context.Context, args json.RawMessage) (string, err
         return "", fmt.Errorf("failed to parse arguments: %w", err)
     }
 
-    // 2. Validate input
     if params.ParamName == "" {
         return "", fmt.Errorf("paramName is required")
     }
 
-    // 3. Make API request (if needed)
     body, err := doAPIRequest(ctx, t.client, "/api/endpoint")
     if err != nil {
         return "", fmt.Errorf("API request failed: %w", err)
     }
 
-    // 4. Parse response
     var result YourModel
     if err := ParseJSONResponse(body, &result); err != nil {
         return "", fmt.Errorf("failed to parse response: %w", err)
     }
 
-    // 5. Format and return result
     return fmt.Sprintf("Result: %v", result), nil
 }
 ```
@@ -256,116 +227,34 @@ Add to `registerTools()`:
 s.tools["my_tool"] = tools.NewMyTool(s.client)
 ```
 
-### 3. Write tests for the tool
+### 3. Write tests
 
-Create `internal/tools/my_tool_test.go`:
-
-```go
-package tools
-
-import (
-    "context"
-    "encoding/json"
-    "testing"
-    "github.com/yourusername/go-mcp-server/internal/client"
-)
-
-func TestMyTool_Execute(t *testing.T) {
-    c := client.New("http://localhost")
-    tool := NewMyTool(c)
-
-    tests := []struct {
-        name      string
-        args      map[string]interface{}
-        expectErr bool
-    }{
-        {
-            name: "valid input",
-            args: map[string]interface{}{
-                "paramName": "test",
-            },
-            expectErr: false,
-        },
-        {
-            name: "empty param",
-            args: map[string]interface{}{
-                "paramName": "",
-            },
-            expectErr: true,
-        },
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            argsJSON, _ := json.Marshal(tt.args)
-            _, err := tool.Execute(context.Background(), argsJSON)
-
-            if tt.expectErr && err == nil {
-                t.Error("Expected error but got nil")
-            }
-            if !tt.expectErr && err != nil {
-                t.Errorf("Unexpected error: %v", err)
-            }
-        })
-    }
-}
-```
+Create `internal/tools/my_tool_test.go` with:
+- Input validation tests
+- Description and schema tests
 
 ### 4. Rebuild and test
 
 ```bash
-# Run tests
-go test ./internal/tools -v -run TestMyTool
-
-# Check coverage
-make coverage
-
-# Run all checks
 make check
-
-# Build binary
 make build
 ```
 
 ## Code Quality Standards
 
 ### Input Validation
-Always validate input before making API calls:
-```go
-if params.ID <= 0 {
-    return "", fmt.Errorf("invalid id: must be positive, got %d", params.ID)
-}
-```
+Always validate input before making API calls.
 
 ### Use Helper Functions
-Prefer helpers over duplicating code:
-```go
-// Good: Use doAPIRequest helper
-body, err := doAPIRequest(ctx, t.client, path)
-
-// Bad: Duplicate HTTP request logic
-resp, err := t.client.Get(ctx, path)
-// ... 10 lines of boilerplate
-```
+Prefer `doAPIRequest` and `ParseJSONResponse` over duplicating HTTP boilerplate.
 
 ### Type Safety
-Use models package instead of map[string]interface{}:
-```go
-// Good: Type-safe
-var items []models.Item
-ParseJSONResponse(body, &items)
-
-// Bad: Unsafe type assertions
-var data []map[string]interface{}
-json.Unmarshal(body, &data)
-```
+Use models package instead of `map[string]interface{}`.
 
 ### Error Messages
 Include context in error messages:
 ```go
-if err != nil {
-    return "", fmt.Errorf("descriptive context: %w", err)
-}
+return "", fmt.Errorf("descriptive context: %w", err)
 ```
 
 ### Testing Requirements
@@ -380,89 +269,36 @@ Every new tool should have:
 - Shared logic in helpers.go
 - Type definitions in models.go
 
-## Extending the Server
-
-### Current Tools
-
-The template includes one example tool:
-- `echo` - Simple example demonstrating tool structure
-
-### Adding Your Tools
-
-1. **Create tool file**: `internal/tools/my_tool.go`
-2. **Write tests**: `internal/tools/my_tool_test.go`
-3. **Register tool**: Update `registerTools()` in `server.go`
-4. **Test**: Run `make check` and test with Claude
-
 ## Configuration
 
-**Environment Variables** (customize for your needs):
-- `API_URL` - Base URL of your API
-- Add authentication credentials as needed
+**Environment Variables:**
+- `PAPERLESS_URL` - Base URL of the Paperless-NGX instance
+- `PAPERLESS_TOKEN` - API authentication token
 
 ## Response Formatting Guidelines
 
-Tools should return **human-readable formatted strings**, not raw JSON. Claude presents these directly to users.
-
-**Good:**
-```go
-return "Found 3 items:\n1. Item One\n2. Item Two\n3. Item Three", nil
-```
-
-**Avoid:**
-```go
-return `{"items":[{"name":"Item One"},...]}`, nil
-```
+Tools should return **human-readable formatted strings**, not raw JSON.
 
 ## Error Handling
 
-**Always wrap errors with context:**
-```go
-if err != nil {
-    return "", fmt.Errorf("descriptive context: %w", err)
-}
-```
-
-**Check HTTP status codes:**
-```go
-if resp.StatusCode != 200 {
-    return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-}
-```
-
-**Handle empty results gracefully:**
-```go
-if len(items) == 0 {
-    return "No items found.", nil
-}
-```
+- Always wrap errors with context using `fmt.Errorf("context: %w", err)`
+- Check HTTP status codes
+- Handle empty results gracefully
 
 ## Important Patterns
 
 ### Context Propagation
 - Always accept and pass `context.Context` through the call chain
-- Enables timeout and cancellation support
-- Use `context.Background()` at entry points
 
 ### JSON Marshaling
 - Use `json.RawMessage` for unknown/dynamic structures
-- Type assert cautiously when parsing API responses
-- Provide defaults for missing fields
 
 ### Resource Cleanup
 - Always `defer resp.Body.Close()` after HTTP requests
-- Read the body even on errors to allow connection reuse
 
 ## Dependencies
 
-Currently zero external dependencies - uses only Go standard library:
-- `encoding/json` - JSON marshaling
-- `net/http` - HTTP client
-- `context` - Context propagation
-- `bufio` - Stdio scanning
-- `io` - I/O utilities
-
-Keep it this way for simplicity and fast builds.
+Zero external dependencies for production code - uses only Go standard library.
 
 ## Version Information
 
@@ -473,20 +309,5 @@ Keep it this way for simplicity and fast builds.
 ## Resources
 
 - MCP Specification: https://modelcontextprotocol.io/
-- Go Documentation: https://golang.org/doc/
-
-## Customization Checklist
-
-When using this template:
-
-- [ ] Update `go.mod` with your module name
-- [ ] Replace `internal/models/` with your domain models
-- [ ] Customize `internal/client/` for your API
-- [ ] Add authentication if needed
-- [ ] Create your tools in `internal/tools/`
-- [ ] Update `main.go` environment variables
-- [ ] Update `README.md` with your project details
-- [ ] Update `SETUP.md` with your configuration
-- [ ] Test with `make check`
-- [ ] Build with `make build`
-- [ ] Configure with Claude (see SETUP.md)
+- Paperless-NGX Documentation: https://docs.paperless-ngx.com/
+- Paperless-NGX API: https://docs.paperless-ngx.com/api/
