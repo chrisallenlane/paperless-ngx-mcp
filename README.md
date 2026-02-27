@@ -1,31 +1,35 @@
-# go-mcp-server
+# paperless-ngx-mcp
 
-A template for building [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers in Go.
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for
+[Paperless-NGX](https://docs.paperless-ngx.com/), written in Go.
 
-This template provides a complete, production-ready foundation for creating MCP servers that integrate external services with Claude and other AI assistants.
+This MCP server integrates Paperless-NGX with Claude and other AI assistants,
+providing tools to query and manage your document management system.
 
 ## Features
 
 - **Complete MCP Implementation**: Full JSON-RPC 2.0 over stdio
 - **Type-Safe Models**: Structured Go types with JSON marshaling
-- **HTTP Client Example**: Generic HTTP client with customizable authentication
+- **Token Authentication**: Paperless-NGX API token-based auth
 - **Tool System**: Clean interface for adding new capabilities
-- **Testing Infrastructure**: Comprehensive test examples
+- **Testing Infrastructure**: Comprehensive test suite
 - **Code Quality Tools**: Formatting, linting, and vetting built-in
 
 ## Project Structure
 
 ```
-go-mcp-server/
+paperless-ngx-mcp/
 ├── cmd/
-│   └── go-mcp-server/    # Main application entry point
+│   └── paperless-ngx-mcp/   # Main application entry point
 ├── internal/
-│   ├── client/           # HTTP client (customize for your API)
-│   ├── models/           # Data structures (replace with your models)
-│   ├── server/           # MCP JSON-RPC server (keep as-is)
-│   └── tools/            # Tool implementations (add yours here)
-├── Makefile              # Build automation
-└── README.md             # This file
+│   ├── client/               # HTTP client for Paperless-NGX API
+│   ├── models/               # Paperless-NGX data structures
+│   ├── server/               # MCP JSON-RPC server
+│   └── tools/                # Tool implementations
+├── Makefile                  # Build automation
+├── CLAUDE.md                 # Development guidance
+├── README.md                 # This file
+└── SETUP.md                  # Setup instructions
 ```
 
 ## Getting Started
@@ -34,25 +38,21 @@ go-mcp-server/
 
 - Go 1.21 or later
 - Make (optional, but recommended)
+- A running Paperless-NGX instance with an API token
 
 ### Installation
 
 ```bash
-# Clone this template
-git clone https://github.com/yourusername/go-mcp-server.git
-cd go-mcp-server
-
-# Install dependencies and build
 make install
 ```
 
 ### Configuration
 
-Set environment variables for your API:
+Set environment variables for your Paperless-NGX instance:
 
 ```bash
-export API_URL="https://api.example.com"
-# Add any other environment variables your server needs
+export PAPERLESS_URL="https://paperless.example.com"
+export PAPERLESS_TOKEN="your-api-token"
 ```
 
 ### Running
@@ -60,87 +60,20 @@ export API_URL="https://api.example.com"
 The MCP server communicates via stdin/stdout:
 
 ```bash
-# Direct execution
-./dist/go-mcp-server
-
-# Or via Claude Desktop (see SETUP.md)
+./dist/paperless-ngx-mcp
 ```
 
-## Customizing for Your Use Case
+See `SETUP.md` for integration with Claude Code and Claude Desktop.
 
-### 1. Update Models (`internal/models/models.go`)
+## Available Tools
 
-Replace the placeholder models with your domain-specific types:
+### `get_status`
 
-```go
-type MyResource struct {
-    ID   int    `json:"id"`
-    Name string `json:"name"`
-    // Add your fields
-}
-```
-
-### 2. Customize HTTP Client (`internal/client/client.go`)
-
-Add authentication, custom headers, etc.:
-
-```go
-// Add your auth fields
-type Client struct {
-    BaseURL string
-    HTTPClient HTTPDoer
-    APIKey string  // Add your auth
-}
-
-// Update doRequest to include auth
-req.Header.Set("Authorization", "Bearer "+c.APIKey)
-```
-
-### 3. Create Tools (`internal/tools/`)
-
-Each tool needs:
-- Implementation file (e.g., `my_tool.go`)
-- Test file (e.g., `my_tool_test.go`)
-
-Example tool structure:
-
-```go
-type MyTool struct {
-    client *client.Client
-}
-
-func (t *MyTool) Execute(ctx context.Context, args json.RawMessage) (string, error) {
-    // Your implementation
-}
-
-func (t *MyTool) Description() string {
-    return "What your tool does"
-}
-
-func (t *MyTool) InputSchema() map[string]interface{} {
-    return map[string]interface{}{
-        "type": "object",
-        "properties": map[string]interface{}{
-            "param": map[string]interface{}{
-                "type": "string",
-                "description": "Parameter description",
-            },
-        },
-        "required": []string{"param"},
-    }
-}
-```
-
-### 4. Register Tools (`internal/server/server.go`)
-
-Add your tools to the `registerTools()` function:
-
-```go
-func (s *Server) registerTools() {
-    s.tools["echo"] = tools.NewEcho(s.client)
-    s.tools["my_tool"] = tools.NewMyTool(s.client)  // Add yours
-}
-```
+Returns the current system status of the Paperless-NGX server, including:
+- Version, OS, and install type
+- Storage usage
+- Database, Redis, and Celery status
+- Index, classifier, and sanity check status with last-run timestamps
 
 ## Development
 
@@ -153,27 +86,14 @@ make build
 ### Test
 
 ```bash
-# Run all tests
 make test
-
-# Run tests with coverage
 make coverage
 ```
 
 ### Code Quality
 
 ```bash
-# Format code
-make fmt
-
-# Lint code
-make lint
-
-# Vet code
-make vet
-
-# Run all checks
-make check
+make check   # format, lint, vet, test
 ```
 
 ## Project Conventions
@@ -195,34 +115,12 @@ Claude → stdin → JSON-RPC Request → Tool Execution → JSON-RPC Response �
 ### Key Components
 
 - **Server** (`internal/server`): Handles JSON-RPC protocol
-- **Client** (`internal/client`): Makes HTTP requests to your API
+- **Client** (`internal/client`): Makes HTTP requests to Paperless-NGX API
 - **Tools** (`internal/tools`): Implements MCP tools
-- **Models** (`internal/models`): Type-safe data structures
-
-## License
-
-MIT License - see LICENSE file for details
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run `make check` to ensure code quality
-5. Submit a pull request
+- **Models** (`internal/models`): Type-safe Paperless-NGX data structures
 
 ## Resources
 
 - [MCP Specification](https://modelcontextprotocol.io/)
-- [Go Documentation](https://golang.org/doc/)
-- [Standard Project Layout](https://github.com/golang-standards/project-layout)
-
-## Next Steps
-
-1. Customize `internal/models/` for your data structures
-2. Update `internal/client/` for your API authentication
-3. Create tools in `internal/tools/` for your use case
-4. Update `cmd/go-mcp-server/main.go` for configuration
-5. Test with Claude Desktop (see SETUP.md)
-
-For detailed development guidance, see `CLAUDE.md`.
+- [Paperless-NGX Documentation](https://docs.paperless-ngx.com/)
+- [Paperless-NGX API](https://docs.paperless-ngx.com/api/)

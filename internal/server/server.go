@@ -10,14 +10,14 @@ import (
 	"log"
 	"time"
 
-	"github.com/chrisallenlane/go-mcp-server/internal/client"
-	"github.com/chrisallenlane/go-mcp-server/internal/tools"
+	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
+	"github.com/chrisallenlane/paperless-ngx-mcp/internal/tools"
 )
 
 // Constants for server configuration
 const (
 	MCPProtocolVersion   = "2024-11-05"
-	ServerName           = "go-mcp-server"
+	ServerName           = "paperless-ngx-mcp"
 	ServerVersion        = "0.1.0"
 	ToolExecutionTimeout = 30 * time.Second
 )
@@ -42,13 +42,8 @@ func New(c *client.Client) *Server {
 }
 
 // registerTools registers all available tools
-// Add your custom tools here
 func (s *Server) registerTools() {
-	// Example tool - replace with your own
-	s.tools["echo"] = tools.NewEcho(s.client)
-
-	// Add more tools as needed:
-	// s.tools["my_tool"] = tools.NewMyTool(s.client)
+	s.tools["get_status"] = tools.NewGetStatus(s.client)
 }
 
 // Run starts the MCP server and processes requests

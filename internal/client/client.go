@@ -1,5 +1,4 @@
-// Package client provides a generic HTTP client example.
-// This is a template - customize it for your specific API needs.
+// Package client provides an HTTP client for the Paperless-NGX API.
 package client
 
 import (
@@ -17,30 +16,29 @@ type HTTPDoer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-// Client represents a generic HTTP API client.
-// Customize this for your specific API needs (e.g., add authentication,
-// custom headers, etc.)
+// Client represents a Paperless-NGX HTTP API client.
 type Client struct {
 	BaseURL    string
+	Token      string
 	HTTPClient HTTPDoer
-	// Add authentication fields as needed:
-	// APIKey     string
-	// Token      string
-	// etc.
 }
 
 // New creates a new HTTP client with default settings
-func New(baseURL string) *Client {
-	return NewWithHTTPClient(baseURL, &http.Client{
+func New(baseURL, token string) *Client {
+	return NewWithHTTPClient(baseURL, token, &http.Client{
 		Timeout: 30 * time.Second,
 	})
 }
 
 // NewWithHTTPClient creates a new client with a custom HTTP client
 // (useful for testing).
-func NewWithHTTPClient(baseURL string, httpClient HTTPDoer) *Client {
+func NewWithHTTPClient(
+	baseURL, token string,
+	httpClient HTTPDoer,
+) *Client {
 	return &Client{
 		BaseURL:    baseURL,
+		Token:      token,
 		HTTPClient: httpClient,
 	}
 }
@@ -64,10 +62,9 @@ func (c *Client) doRequest(
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-
-	// Add authentication headers here if needed:
-	// req.Header.Set("Authorization", "Bearer "+c.Token)
-	// req.Header.Set("X-API-Key", c.APIKey)
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Token "+c.Token)
+	}
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -78,7 +75,10 @@ func (c *Client) doRequest(
 }
 
 // Get performs a GET request
-func (c *Client) Get(ctx context.Context, path string) (*http.Response, error) {
+func (c *Client) Get(
+	ctx context.Context,
+	path string,
+) (*http.Response, error) {
 	return c.doRequest(ctx, "GET", path, nil)
 }
 

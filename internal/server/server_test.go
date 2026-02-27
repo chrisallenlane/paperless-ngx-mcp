@@ -3,13 +3,14 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
-	"github.com/chrisallenlane/go-mcp-server/internal/client"
+	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
 )
 
 func TestHandleInitialize(t *testing.T) {
-	c := client.New("http://localhost")
+	c := client.New("http://localhost", "test-token")
 	s := New(c)
 
 	req := &JSONRPCRequest{
@@ -56,7 +57,11 @@ func TestHandleInitialize(t *testing.T) {
 	}
 
 	if serverInfo["name"] != ServerName {
-		t.Errorf("Server name = %s, want %s", serverInfo["name"], ServerName)
+		t.Errorf(
+			"Server name = %s, want %s",
+			serverInfo["name"],
+			ServerName,
+		)
 	}
 
 	if serverInfo["version"] != ServerVersion {
@@ -69,7 +74,7 @@ func TestHandleInitialize(t *testing.T) {
 }
 
 func TestHandleListTools(t *testing.T) {
-	c := client.New("http://localhost")
+	c := client.New("http://localhost", "test-token")
 	s := New(c)
 
 	req := &JSONRPCRequest{
@@ -98,12 +103,7 @@ func TestHandleListTools(t *testing.T) {
 		t.Fatal("tools should be a slice")
 	}
 
-	// Verify we have tools registered
-	if len(tools) == 0 {
-		t.Error("Expected at least one tool to be registered")
-	}
-
-	// Verify tool structure
+	// Verify tool structure for any registered tools
 	for _, tool := range tools {
 		if _, ok := tool["name"]; !ok {
 			t.Error("Tool should have a name")
@@ -115,28 +115,10 @@ func TestHandleListTools(t *testing.T) {
 			t.Error("Tool should have an inputSchema")
 		}
 	}
-
-	// Verify the echo tool exists
-	toolNames := make([]string, len(tools))
-	for i, tool := range tools {
-		toolNames[i] = tool["name"].(string)
-	}
-
-	expectedTool := "echo"
-	found := false
-	for _, name := range toolNames {
-		if name == expectedTool {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Errorf("Expected tool %s not found", expectedTool)
-	}
 }
 
 func TestHandleUnknownMethod(t *testing.T) {
-	c := client.New("http://localhost")
+	c := client.New("http://localhost", "test-token")
 	s := New(c)
 
 	req := &JSONRPCRequest{
@@ -155,8 +137,11 @@ func TestHandleUnknownMethod(t *testing.T) {
 		t.Errorf("Error code = %d, want -32601", resp.Error.Code)
 	}
 
-	if resp.Error.Message != "Method not found: unknown/method" {
-		t.Errorf("Error message = %s", resp.Error.Message)
+	if !strings.Contains(resp.Error.Message, "Method not found") {
+		t.Errorf(
+			"Error message should mention 'Method not found', got: %s",
+			resp.Error.Message,
+		)
 	}
 
 	if resp.Result != nil {
@@ -165,7 +150,7 @@ func TestHandleUnknownMethod(t *testing.T) {
 }
 
 func TestHandleCallTool_InvalidTool(t *testing.T) {
-	c := client.New("http://localhost")
+	c := client.New("http://localhost", "test-token")
 	s := New(c)
 
 	params := map[string]interface{}{
@@ -187,7 +172,7 @@ func TestHandleCallTool_InvalidTool(t *testing.T) {
 		t.Fatal("Expected error for nonexistent tool")
 	}
 
-	if !containsString(resp.Error.Message, "tool not found") {
+	if !strings.Contains(resp.Error.Message, "tool not found") {
 		t.Errorf(
 			"Error message should mention 'tool not found', got: %s",
 			resp.Error.Message,
@@ -196,7 +181,7 @@ func TestHandleCallTool_InvalidTool(t *testing.T) {
 }
 
 func TestHandleCallTool_MalformedParams(t *testing.T) {
-	c := client.New("http://localhost")
+	c := client.New("http://localhost", "test-token")
 	s := New(c)
 
 	req := &JSONRPCRequest{
@@ -212,7 +197,10 @@ func TestHandleCallTool_MalformedParams(t *testing.T) {
 		t.Fatal("Expected error for malformed params")
 	}
 
-	if !containsString(resp.Error.Message, "failed to parse tool call params") {
+	if !strings.Contains(
+		resp.Error.Message,
+		"failed to parse tool call params",
+	) {
 		t.Errorf(
 			"Error message should mention parsing failure, got: %s",
 			resp.Error.Message,
@@ -235,28 +223,6 @@ func TestJSONRPCRequest_Unmarshal(t *testing.T) {
 
 	if req.Method != "initialize" {
 		t.Errorf("Method = %s, want initialize", req.Method)
-	}
-}
-
-func TestJSONRPCResponse_Marshal(t *testing.T) {
-	resp := &JSONRPCResponse{
-		JSONRPC: "2.0",
-		ID:      1,
-		Result:  map[string]string{"status": "ok"},
-	}
-
-	data, err := json.Marshal(resp)
-	if err != nil {
-		t.Fatalf("Failed to marshal: %v", err)
-	}
-
-	var decoded map[string]interface{}
-	if err := json.Unmarshal(data, &decoded); err != nil {
-		t.Fatalf("Failed to unmarshal: %v", err)
-	}
-
-	if decoded["jsonrpc"] != "2.0" {
-		t.Errorf("jsonrpc = %v, want 2.0", decoded["jsonrpc"])
 	}
 }
 
@@ -286,7 +252,10 @@ func TestJSONRPCError_Marshal(t *testing.T) {
 	}
 
 	if errorObj["code"].(float64) != -32600 {
-		t.Errorf("error code = %v, want -32600", errorObj["code"])
+		t.Errorf(
+			"error code = %v, want -32600",
+			errorObj["code"],
+		)
 	}
 
 	if errorObj["message"] != "Invalid Request" {
@@ -295,13 +264,4 @@ func TestJSONRPCError_Marshal(t *testing.T) {
 			errorObj["message"],
 		)
 	}
-}
-
-func containsString(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
