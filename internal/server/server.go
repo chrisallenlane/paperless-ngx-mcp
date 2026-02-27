@@ -76,6 +76,21 @@ func (s *Server) registerTools() {
 	s.tools["delete_custom_field"] = tools.NewDeleteCustomField(
 		s.client,
 	)
+	s.tools["list_document_types"] = tools.NewListDocumentTypes(
+		s.client,
+	)
+	s.tools["get_document_type"] = tools.NewGetDocumentType(
+		s.client,
+	)
+	s.tools["create_document_type"] = tools.NewCreateDocumentType(
+		s.client,
+	)
+	s.tools["update_document_type"] = tools.NewUpdateDocumentType(
+		s.client,
+	)
+	s.tools["delete_document_type"] = tools.NewDeleteDocumentType(
+		s.client,
+	)
 }
 
 // Run starts the MCP server and processes requests
