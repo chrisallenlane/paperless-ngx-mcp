@@ -1,9 +1,40 @@
 package tools
 
 import (
+	"fmt"
+
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/models"
 )
+
+// --- No-arg get tools ---
+
+// NewGetStatus creates a tool to get the system status.
+func NewGetStatus(c *client.Client) Tool {
+	return &noArgGetTool[models.SystemStatus]{
+		client: c,
+		desc: "Get the current system status " +
+			"of the Paperless-NGX server",
+		path:   "/api/status/",
+		format: formatStatus,
+	}
+}
+
+// NewGetNextASN creates a tool to get the next available ASN.
+func NewGetNextASN(c *client.Client) Tool {
+	return &noArgGetTool[int]{
+		client: c,
+		desc: "Get the next available " +
+			"archive serial number (ASN)",
+		path: "/api/documents/next_asn/",
+		format: func(v *int) string {
+			return fmt.Sprintf(
+				"Next available ASN: %d",
+				*v,
+			)
+		},
+	}
+}
 
 // --- Get tools ---
 

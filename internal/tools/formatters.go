@@ -161,13 +161,6 @@ func matchingAlgorithmName(algo int) string {
 	return name
 }
 
-func matchDisplayOrDefault(match string) string {
-	if match == "" {
-		return "(none)"
-	}
-	return match
-}
-
 func formatMatchableFields(
 	label string,
 	id int,
@@ -177,7 +170,10 @@ func formatMatchableFields(
 	docCount int,
 ) string {
 	algoName := matchingAlgorithmName(algo)
-	matchDisplay := matchDisplayOrDefault(match)
+	matchDisplay := match
+	if matchDisplay == "" {
+		matchDisplay = "(none)"
+	}
 
 	out := fmt.Sprintf("%s (ID: %d)\n", label, id)
 	out += fmt.Sprintf("  Name: %s\n", name)

@@ -9,6 +9,42 @@ import (
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/models"
 )
 
+// noArgGetTool is a data-driven GET tool with no input parameters.
+type noArgGetTool[T any] struct {
+	client *client.Client
+	desc   string
+	path   string
+	format func(*T) string
+}
+
+func (t *noArgGetTool[T]) Description() string {
+	return t.desc
+}
+
+func (t *noArgGetTool[T]) InputSchema() map[string]interface{} {
+	return emptySchema()
+}
+
+func (t *noArgGetTool[T]) Execute(
+	ctx context.Context,
+	_ json.RawMessage,
+) (string, error) {
+	body, err := doAPIRequest(ctx, t.client, t.path)
+	if err != nil {
+		return "", err
+	}
+
+	var result T
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf(
+			"failed to parse response: %w",
+			err,
+		)
+	}
+
+	return t.format(&result), nil
+}
+
 // getTool is a data-driven GET-by-ID tool.
 type getTool[T any] struct {
 	client  *client.Client
