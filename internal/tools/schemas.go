@@ -22,6 +22,38 @@ func idOnlySchema(desc string) map[string]interface{} {
 	}
 }
 
+// taskListSchema returns an input schema for the task list tool.
+func taskListSchema() map[string]interface{} {
+	return map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"status": map[string]interface{}{
+				"type": "string",
+				"description": "Filter by status: " +
+					"FAILURE, PENDING, RECEIVED, " +
+					"RETRY, REVOKED, STARTED, SUCCESS",
+			},
+			"task_name": map[string]interface{}{
+				"type": "string",
+				"description": "Filter by task name: " +
+					"consume_file, train_classifier, " +
+					"check_sanity, index_optimize",
+			},
+			"type": map[string]interface{}{
+				"type": "string",
+				"description": "Filter by type: " +
+					"auto_task, scheduled_task, " +
+					"manual_task",
+			},
+			"task_id": map[string]interface{}{
+				"type": "string",
+				"description": "Filter by " +
+					"Celery task UUID",
+			},
+		},
+	}
+}
+
 // paginationOnlySchema returns an input schema with only page and
 // page_size parameters (no name filter).
 func paginationOnlySchema() map[string]interface{} {

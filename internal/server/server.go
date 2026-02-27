@@ -121,6 +121,12 @@ func (s *Server) registerTools() {
 	s.tools["get_statistics"] = tools.NewGetStatistics(
 		s.client,
 	)
+	s.tools["list_tasks"] = tools.NewListTasks(
+		s.client,
+	)
+	s.tools["get_task"] = tools.NewGetTask(
+		s.client,
+	)
 	s.tools["list_trash"] = tools.NewListTrash(
 		s.client,
 	)

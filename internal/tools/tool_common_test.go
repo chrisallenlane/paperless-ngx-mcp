@@ -57,6 +57,15 @@ var allToolTests = []toolTestEntry{
 
 	// Get (ID-based) tools
 	{
+		name: "GetTask",
+		newTool: func(c *client.Client) Tool {
+			return NewGetTask(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
 		name: "GetCorrespondent",
 		newTool: func(c *client.Client) Tool {
 			return NewGetCorrespondent(c)
@@ -144,6 +153,13 @@ var allToolTests = []toolTestEntry{
 		name: "ListTrash",
 		newTool: func(c *client.Client) Tool {
 			return NewListTrash(c)
+		},
+		serverArgs: `{}`,
+	},
+	{
+		name: "ListTasks",
+		newTool: func(c *client.Client) Tool {
+			return NewListTasks(c)
 		},
 		serverArgs: `{}`,
 	},
@@ -674,6 +690,20 @@ const documentTypeListResponse = `{
 
 // GET happy-path table tests.
 
+const taskResponse = `{
+	"id": 1,
+	"task_id": "abc-123-def-456",
+	"task_name": "consume_file",
+	"task_file_name": "invoice.pdf",
+	"date_created": "2026-02-27T10:00:00Z",
+	"date_done": "2026-02-27T10:01:00Z",
+	"type": "auto_task",
+	"status": "SUCCESS",
+	"result": "Success. New document id 42 created",
+	"acknowledged": false,
+	"related_document": "42"
+}`
+
 var getToolTests = []struct {
 	name         string
 	newTool      func(*client.Client) Tool
@@ -682,6 +712,28 @@ var getToolTests = []struct {
 	responseJSON string
 	checks       []string
 }{
+	{
+		name: "GetTask",
+		newTool: func(c *client.Client) Tool {
+			return NewGetTask(c)
+		},
+		path:         "/api/tasks/1/",
+		args:         `{"id": 1}`,
+		responseJSON: taskResponse,
+		checks: []string{
+			"Task (ID: 1)",
+			"Task UUID: abc-123-def-456",
+			"Status: SUCCESS",
+			"Type: auto_task",
+			"Task Name: consume_file",
+			"File Name: invoice.pdf",
+			"Created: 2026-02-27",
+			"Done: 2026-02-27",
+			"Result: Success. New document id 42 created",
+			"Acknowledged: false",
+			"Related Document: 42",
+		},
+	},
 	{
 		name: "GetCorrespondent",
 		newTool: func(c *client.Client) Tool {
