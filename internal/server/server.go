@@ -118,6 +118,21 @@ func (s *Server) registerTools() {
 	s.tools["download_document"] = tools.NewDownloadDocument(
 		s.client,
 	)
+	s.tools["list_tags"] = tools.NewListTags(
+		s.client,
+	)
+	s.tools["get_tag"] = tools.NewGetTag(
+		s.client,
+	)
+	s.tools["create_tag"] = tools.NewCreateTag(
+		s.client,
+	)
+	s.tools["update_tag"] = tools.NewUpdateTag(
+		s.client,
+	)
+	s.tools["delete_tag"] = tools.NewDeleteTag(
+		s.client,
+	)
 	s.tools["list_storage_paths"] = tools.NewListStoragePaths(
 		s.client,
 	)

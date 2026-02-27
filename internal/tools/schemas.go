@@ -22,6 +22,65 @@ func idOnlySchema(desc string) map[string]interface{} {
 	}
 }
 
+// tagSchema returns an input schema for tag tools.
+// Set includeID to true for update tools, false for create.
+func tagSchema(
+	includeID bool,
+) map[string]interface{} {
+	props := map[string]interface{}{
+		"name": map[string]interface{}{
+			"type":        "string",
+			"description": "Tag name",
+		},
+		"color": map[string]interface{}{
+			"type": "string",
+			"description": "Hex color code " +
+				"(e.g., #a6cee3)",
+		},
+		"match": map[string]interface{}{
+			"type": "string",
+			"description": "Match pattern " +
+				"for auto-assignment",
+		},
+		"matching_algorithm": map[string]interface{}{
+			"type": "integer",
+			"description": "Matching algorithm: " +
+				"0=None, 1=Any word, 2=All words, " +
+				"3=Exact match, 4=Regex, " +
+				"5=Fuzzy word, 6=Automatic",
+		},
+		"is_insensitive": map[string]interface{}{
+			"type":        "boolean",
+			"description": "Case-insensitive matching",
+		},
+		"is_inbox_tag": map[string]interface{}{
+			"type": "boolean",
+			"description": "Automatically assign to " +
+				"newly consumed documents",
+		},
+		"parent": map[string]interface{}{
+			"type": "integer",
+			"description": "Parent tag ID " +
+				"for hierarchical tags",
+		},
+	}
+
+	required := []string{"name"}
+	if includeID {
+		props["id"] = map[string]interface{}{
+			"type":        "integer",
+			"description": "Tag ID to update",
+		}
+		required = []string{"id"}
+	}
+
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": props,
+		"required":   required,
+	}
+}
+
 // storagePathSchema returns an input schema for storage path
 // tools. Set includeID to true for update tools, false for create.
 func storagePathSchema(

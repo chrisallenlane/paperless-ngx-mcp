@@ -183,6 +183,22 @@ type DocumentMetadata struct {
 	Lang                 string      `json:"lang"`
 }
 
+// Tag represents a Paperless-NGX tag.
+type Tag struct {
+	ID                int    `json:"id"`
+	Slug              string `json:"slug"`
+	Name              string `json:"name"`
+	Color             string `json:"color"`
+	TextColor         string `json:"text_color"`
+	Match             string `json:"match"`
+	MatchingAlgorithm int    `json:"matching_algorithm"`
+	IsInsensitive     bool   `json:"is_insensitive"`
+	IsInboxTag        bool   `json:"is_inbox_tag"`
+	DocumentCount     int    `json:"document_count"`
+	Parent            *int   `json:"parent"`
+	Children          []int  `json:"children"`
+}
+
 // StoragePath represents a Paperless-NGX storage path.
 type StoragePath struct {
 	ID                int    `json:"id"`
