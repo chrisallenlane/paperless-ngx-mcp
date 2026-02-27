@@ -3,6 +3,7 @@ package tools
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/models"
 )
@@ -300,4 +301,126 @@ func formatDocumentTypeList(
 	}
 
 	return out
+}
+
+func formatDocument(d *models.Document) string {
+	out := fmt.Sprintf("Document (ID: %d)\n", d.ID)
+	out += fmt.Sprintf("  Title: %s\n", d.Title)
+	out += fmt.Sprintf(
+		"  Correspondent: %s\n",
+		formatOptInt(d.Correspondent),
+	)
+	out += fmt.Sprintf(
+		"  Document Type: %s\n",
+		formatOptInt(d.DocumentType),
+	)
+	out += fmt.Sprintf(
+		"  Storage Path: %s\n",
+		formatOptInt(d.StoragePath),
+	)
+
+	if len(d.Tags) > 0 {
+		tagStrs := make([]string, len(d.Tags))
+		for i, t := range d.Tags {
+			tagStrs[i] = fmt.Sprintf("%d", t)
+		}
+		out += fmt.Sprintf(
+			"  Tags: %s\n",
+			strings.Join(tagStrs, ", "),
+		)
+	} else {
+		out += "  Tags: (none)\n"
+	}
+
+	out += fmt.Sprintf("  Created: %s\n", formatDate(d.Created))
+	out += fmt.Sprintf("  Added: %s\n", formatDate(d.Added))
+	out += fmt.Sprintf("  Modified: %s\n", formatDate(d.Modified))
+	out += fmt.Sprintf(
+		"  ASN: %s\n",
+		formatOptInt(d.ArchiveSerialNumber),
+	)
+	out += fmt.Sprintf(
+		"  Original File: %s\n",
+		formatOptStr(d.OriginalFileName),
+	)
+	out += fmt.Sprintf(
+		"  Archived File: %s\n",
+		formatOptStr(d.ArchivedFileName),
+	)
+	out += fmt.Sprintf("  MIME Type: %s\n", d.MimeType)
+	out += fmt.Sprintf(
+		"  Page Count: %s\n",
+		formatOptInt(d.PageCount),
+	)
+
+	if len(d.CustomFields) > 0 {
+		out += "  Custom Fields:\n"
+		for _, cf := range d.CustomFields {
+			out += fmt.Sprintf(
+				"    Field %d: %s\n",
+				cf.Field,
+				string(cf.Value),
+			)
+		}
+	}
+
+	contentPreview := d.Content
+	if len(contentPreview) > 500 {
+		contentPreview = contentPreview[:500] + "..."
+	}
+	if contentPreview != "" {
+		out += fmt.Sprintf("  Content: %s\n", contentPreview)
+	}
+
+	return out
+}
+
+func formatDocumentList(
+	list *models.PaginatedList[models.Document],
+) string {
+	if list.Count == 0 {
+		return "No documents found."
+	}
+
+	out := fmt.Sprintf("Documents: %d total\n\n", list.Count)
+	for _, d := range list.Results {
+		corr := formatOptInt(d.Correspondent)
+		docType := formatOptInt(d.DocumentType)
+		asn := formatOptInt(d.ArchiveSerialNumber)
+
+		out += fmt.Sprintf(
+			"%d. %s (ID: %d)\n",
+			d.ID,
+			d.Title,
+			d.ID,
+		)
+		out += fmt.Sprintf(
+			"   Correspondent: %s | Type: %s | "+
+				"ASN: %s | Created: %s\n",
+			corr,
+			docType,
+			asn,
+			formatDate(d.Created),
+		)
+	}
+
+	if list.Next != nil {
+		out += "\n(more results available — use page parameter)"
+	}
+
+	return out
+}
+
+func formatOptInt(v *int) string {
+	if v != nil {
+		return fmt.Sprintf("%d", *v)
+	}
+	return "(none)"
+}
+
+func formatOptStr(v *string) string {
+	if v != nil && *v != "" {
+		return *v
+	}
+	return "(none)"
 }
