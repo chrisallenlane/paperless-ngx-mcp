@@ -95,19 +95,6 @@ func (c *Client) Post(
 	return c.doRequest(ctx, "POST", path, data)
 }
 
-// Put performs a PUT request
-func (c *Client) Put(
-	ctx context.Context,
-	path string,
-	body interface{},
-) (*http.Response, error) {
-	data, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
-	}
-	return c.doRequest(ctx, "PUT", path, data)
-}
-
 // Patch performs a PATCH request
 func (c *Client) Patch(
 	ctx context.Context,
