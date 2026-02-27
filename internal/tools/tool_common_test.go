@@ -47,8 +47,51 @@ var allToolTests = []toolTestEntry{
 		},
 		serverArgs: `{}`,
 	},
+	{
+		name: "GetStatistics",
+		newTool: func(c *client.Client) Tool {
+			return NewGetStatistics(c)
+		},
+		serverArgs: `{}`,
+	},
 
 	// Get (ID-based) tools
+	{
+		name: "GetSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewGetSavedView(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "GetTag",
+		newTool: func(c *client.Client) Tool {
+			return NewGetTag(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "GetStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewGetStoragePath(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "GetTask",
+		newTool: func(c *client.Client) Tool {
+			return NewGetTask(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
 	{
 		name: "GetCorrespondent",
 		newTool: func(c *client.Client) Tool {
@@ -127,9 +170,44 @@ var allToolTests = []toolTestEntry{
 		serverArgs: `{}`,
 	},
 	{
+		name: "ListSavedViews",
+		newTool: func(c *client.Client) Tool {
+			return NewListSavedViews(c)
+		},
+		serverArgs: `{}`,
+	},
+	{
+		name: "ListTags",
+		newTool: func(c *client.Client) Tool {
+			return NewListTags(c)
+		},
+		serverArgs: `{}`,
+	},
+	{
+		name: "ListStoragePaths",
+		newTool: func(c *client.Client) Tool {
+			return NewListStoragePaths(c)
+		},
+		serverArgs: `{}`,
+	},
+	{
 		name: "ListDocuments",
 		newTool: func(c *client.Client) Tool {
 			return NewListDocuments(c)
+		},
+		serverArgs: `{}`,
+	},
+	{
+		name: "ListTrash",
+		newTool: func(c *client.Client) Tool {
+			return NewListTrash(c)
+		},
+		serverArgs: `{}`,
+	},
+	{
+		name: "ListTasks",
+		newTool: func(c *client.Client) Tool {
+			return NewListTasks(c)
 		},
 		serverArgs: `{}`,
 	},
@@ -159,6 +237,35 @@ var allToolTests = []toolTestEntry{
 		serverArgs: `{"name": "Test"}`,
 		required:   []string{"name"},
 	},
+	{
+		name: "CreateSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewCreateSavedView(c)
+		},
+		serverArgs: `{"name": "Test", "show_on_dashboard": true, "show_in_sidebar": false, "filter_rules": []}`,
+		required: []string{
+			"name",
+			"show_on_dashboard",
+			"show_in_sidebar",
+			"filter_rules",
+		},
+	},
+	{
+		name: "CreateTag",
+		newTool: func(c *client.Client) Tool {
+			return NewCreateTag(c)
+		},
+		serverArgs: `{"name": "Test"}`,
+		required:   []string{"name"},
+	},
+	{
+		name: "CreateStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewCreateStoragePath(c)
+		},
+		serverArgs: `{"name": "Test", "path": "/test/"}`,
+		required:   []string{"name", "path"},
+	},
 
 	// Update tools
 	{
@@ -185,6 +292,36 @@ var allToolTests = []toolTestEntry{
 		name: "UpdateDocumentType",
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateDocumentType(c)
+		},
+		serverArgs:    `{"id": 1, "name": "Test"}`,
+		idArgsFmt:     `{"id": %d}`,
+		missingIDArgs: `{"name": "Test"}`,
+		required:      []string{"id"},
+	},
+	{
+		name: "UpdateSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateSavedView(c)
+		},
+		serverArgs:    `{"id": 1, "name": "Test"}`,
+		idArgsFmt:     `{"id": %d}`,
+		missingIDArgs: `{"name": "Test"}`,
+		required:      []string{"id"},
+	},
+	{
+		name: "UpdateTag",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateTag(c)
+		},
+		serverArgs:    `{"id": 1, "name": "Test"}`,
+		idArgsFmt:     `{"id": %d}`,
+		missingIDArgs: `{"name": "Test"}`,
+		required:      []string{"id"},
+	},
+	{
+		name: "UpdateStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateStoragePath(c)
 		},
 		serverArgs:    `{"id": 1, "name": "Test"}`,
 		idArgsFmt:     `{"id": %d}`,
@@ -241,6 +378,33 @@ var allToolTests = []toolTestEntry{
 		required:   []string{"id"},
 	},
 	{
+		name: "DeleteSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteSavedView(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "DeleteTag",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteTag(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "DeleteStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteStoragePath(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
 		name: "DeleteDocument",
 		newTool: func(c *client.Client) Tool {
 			return NewDeleteDocument(c)
@@ -248,6 +412,37 @@ var allToolTests = []toolTestEntry{
 		serverArgs: `{"id": 1}`,
 		idArgsFmt:  `{"id": %d}`,
 		required:   []string{"id"},
+	},
+
+	// Document note tools
+	{
+		name: "ListDocumentNotes",
+		newTool: func(c *client.Client) Tool {
+			return NewListDocumentNotes(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "CreateDocumentNote",
+		newTool: func(c *client.Client) Tool {
+			return NewCreateDocumentNote(c)
+		},
+		serverArgs: `{"id": 1, "note": "Test"}`,
+		idArgsFmt:  `{"id": %d, "note": "Test"}`,
+		required:   []string{"id", "note"},
+	},
+	{
+		name: "DeleteDocumentNote",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteDocumentNote(c)
+		},
+		serverArgs: `{"document_id": 1, "note_id": 1}`,
+		required: []string{
+			"document_id",
+			"note_id",
+		},
 	},
 
 	// Special tools (Description + InputSchema only)
@@ -660,6 +855,161 @@ const documentTypeListResponse = `{
 
 // GET happy-path table tests.
 
+const savedViewResponse = `{
+	"id": 1,
+	"name": "Unpaid Invoices",
+	"show_on_dashboard": true,
+	"show_in_sidebar": true,
+	"sort_field": "created",
+	"sort_reverse": true,
+	"filter_rules": [
+		{"rule_type": 4, "value": "3"},
+		{"rule_type": 6, "value": "7"}
+	],
+	"page_size": 50,
+	"display_mode": "table"
+}`
+
+const savedViewListResponse = `{
+	"count": 2,
+	"next": null,
+	"previous": null,
+	"all": [1, 2],
+	"results": [
+		{
+			"id": 1,
+			"name": "Unpaid Invoices",
+			"show_on_dashboard": true,
+			"show_in_sidebar": true,
+			"sort_field": "created",
+			"sort_reverse": true,
+			"filter_rules": [
+				{"rule_type": 4, "value": "3"},
+				{"rule_type": 6, "value": "7"}
+			],
+			"page_size": 50,
+			"display_mode": "table"
+		},
+		{
+			"id": 2,
+			"name": "Recent Documents",
+			"show_on_dashboard": false,
+			"show_in_sidebar": true,
+			"sort_field": "added",
+			"sort_reverse": true,
+			"filter_rules": [],
+			"page_size": null,
+			"display_mode": null
+		}
+	]
+}`
+
+const tagResponse = `{
+	"id": 1,
+	"slug": "important",
+	"name": "Important",
+	"color": "#a6cee3",
+	"text_color": "#000000",
+	"match": "important",
+	"matching_algorithm": 1,
+	"is_insensitive": true,
+	"is_inbox_tag": false,
+	"document_count": 8,
+	"parent": null,
+	"children": [3, 5]
+}`
+
+const tagListResponse = `{
+	"count": 2,
+	"next": null,
+	"previous": null,
+	"all": [1, 2],
+	"results": [
+		{
+			"id": 1,
+			"slug": "important",
+			"name": "Important",
+			"color": "#a6cee3",
+			"text_color": "#000000",
+			"match": "important",
+			"matching_algorithm": 1,
+			"is_insensitive": true,
+			"is_inbox_tag": false,
+			"document_count": 8,
+			"parent": null,
+			"children": [3, 5]
+		},
+		{
+			"id": 2,
+			"slug": "inbox",
+			"name": "Inbox",
+			"color": "#ff0000",
+			"text_color": "#ffffff",
+			"match": "",
+			"matching_algorithm": 6,
+			"is_insensitive": true,
+			"is_inbox_tag": true,
+			"document_count": 3,
+			"parent": null,
+			"children": []
+		}
+	]
+}`
+
+const storagePathResponse = `{
+	"id": 1,
+	"slug": "invoices",
+	"name": "Invoices",
+	"path": "{correspondent}/{document_type}/{title}",
+	"match": "invoice",
+	"matching_algorithm": 1,
+	"is_insensitive": true,
+	"document_count": 15
+}`
+
+const storagePathListResponse = `{
+	"count": 2,
+	"next": null,
+	"previous": null,
+	"all": [1, 2],
+	"results": [
+		{
+			"id": 1,
+			"slug": "invoices",
+			"name": "Invoices",
+			"path": "{correspondent}/{document_type}/{title}",
+			"match": "invoice",
+			"matching_algorithm": 1,
+			"is_insensitive": true,
+			"document_count": 15
+		},
+		{
+			"id": 2,
+			"slug": "archive",
+			"name": "Archive",
+			"path": "archive/{created_year}/{title}",
+			"match": "",
+			"matching_algorithm": 6,
+			"is_insensitive": true,
+			"document_count": 5
+		}
+	]
+}`
+
+const taskResponse = `{
+	"id": 1,
+	"task_id": "abc-123-def-456",
+	"task_name": "consume_file",
+	"task_file_name": "invoice.pdf",
+	"date_created": "2026-02-27T10:00:00Z",
+	"date_done": "2026-02-27T10:01:00Z",
+	"type": "auto_task",
+	"status": "SUCCESS",
+	"result": "Success. New document id 42 created",
+	"acknowledged": false,
+	"related_document": "42"
+}`
+
 var getToolTests = []struct {
 	name         string
 	newTool      func(*client.Client) Tool
@@ -668,6 +1018,90 @@ var getToolTests = []struct {
 	responseJSON string
 	checks       []string
 }{
+	{
+		name: "GetSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewGetSavedView(c)
+		},
+		path:         "/api/saved_views/1/",
+		args:         `{"id": 1}`,
+		responseJSON: savedViewResponse,
+		checks: []string{
+			"Saved View (ID: 1)",
+			"Name: Unpaid Invoices",
+			"Show on Dashboard: true",
+			"Show in Sidebar: true",
+			"Sort Field: created",
+			"Sort Reverse: true",
+			"Page Size: 50",
+			"Display Mode: table",
+			"Document type is: 3",
+			"Has tag: 7",
+		},
+	},
+	{
+		name: "GetTag",
+		newTool: func(c *client.Client) Tool {
+			return NewGetTag(c)
+		},
+		path:         "/api/tags/1/",
+		args:         `{"id": 1}`,
+		responseJSON: tagResponse,
+		checks: []string{
+			"Tag (ID: 1)",
+			"Name: Important",
+			"Slug: important",
+			"Match: important",
+			"Matching Algorithm: 1 (Any word)",
+			"Case Insensitive: true",
+			"Document Count: 8",
+			"Color: #a6cee3",
+			"Text Color: #000000",
+			"Is Inbox Tag: false",
+			"Children: 3, 5",
+		},
+	},
+	{
+		name: "GetStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewGetStoragePath(c)
+		},
+		path:         "/api/storage_paths/1/",
+		args:         `{"id": 1}`,
+		responseJSON: storagePathResponse,
+		checks: []string{
+			"Storage Path (ID: 1)",
+			"Name: Invoices",
+			"Slug: invoices",
+			"Path: {correspondent}/{document_type}/{title}",
+			"Match: invoice",
+			"Matching Algorithm: 1 (Any word)",
+			"Case Insensitive: true",
+			"Document Count: 15",
+		},
+	},
+	{
+		name: "GetTask",
+		newTool: func(c *client.Client) Tool {
+			return NewGetTask(c)
+		},
+		path:         "/api/tasks/1/",
+		args:         `{"id": 1}`,
+		responseJSON: taskResponse,
+		checks: []string{
+			"Task (ID: 1)",
+			"Task UUID: abc-123-def-456",
+			"Status: SUCCESS",
+			"Type: auto_task",
+			"Task Name: consume_file",
+			"File Name: invoice.pdf",
+			"Created: 2026-02-27",
+			"Done: 2026-02-27",
+			"Result: Success. New document id 42 created",
+			"Acknowledged: false",
+			"Related Document: 42",
+		},
+	},
 	{
 		name: "GetCorrespondent",
 		newTool: func(c *client.Client) Tool {
@@ -910,6 +1344,63 @@ var listToolTests = []struct {
 		emptyMessage:    "No document types found.",
 		nameFilterName:  "invoice",
 		nameFilterCheck: "Invoice",
+	},
+	{
+		name: "ListSavedViews",
+		newTool: func(c *client.Client) Tool {
+			return NewListSavedViews(c)
+		},
+		path:         "/api/saved_views/",
+		responseJSON: savedViewListResponse,
+		checks: []string{
+			"Saved Views: 2 total",
+			"Unpaid Invoices (ID: 1)",
+			"2 filter rules",
+			"[dashboard]",
+			"[sidebar]",
+			"Recent Documents (ID: 2)",
+			"0 filter rules",
+		},
+		emptyMessage:    "No saved views found.",
+		nameFilterName:  "",
+		nameFilterCheck: "",
+	},
+	{
+		name: "ListTags",
+		newTool: func(c *client.Client) Tool {
+			return NewListTags(c)
+		},
+		path:         "/api/tags/",
+		responseJSON: tagListResponse,
+		checks: []string{
+			"Tags: 2 total",
+			"Important (ID: 1)",
+			"8 documents",
+			"Inbox (ID: 2)",
+			"3 documents",
+			"[inbox]",
+		},
+		emptyMessage:    "No tags found.",
+		nameFilterName:  "important",
+		nameFilterCheck: "Important",
+	},
+	{
+		name: "ListStoragePaths",
+		newTool: func(c *client.Client) Tool {
+			return NewListStoragePaths(c)
+		},
+		path:         "/api/storage_paths/",
+		responseJSON: storagePathListResponse,
+		checks: []string{
+			"Storage Paths: 2 total",
+			"Invoices (ID: 1)",
+			"15 documents",
+			"Archive (ID: 2)",
+			"5 documents",
+		},
+		emptyMessage:    "No storage paths found.",
+		nameFilterName:  "invoices",
+		nameFilterCheck: "Invoices",
 	},
 }
 
@@ -1171,6 +1662,83 @@ var updateToolTests = []struct {
 		checks: []string{
 			"Document Type (ID: 1)",
 			"Name: Updated Type",
+		},
+	},
+	{
+		name: "UpdateSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateSavedView(c)
+		},
+		path:       "/api/saved_views/1/",
+		args:       `{"id": 1, "name": "Updated View"}`,
+		fieldName:  "name",
+		fieldValue: "Updated View",
+		responseJSON: `{
+			"id": 1,
+			"name": "Updated View",
+			"show_on_dashboard": true,
+			"show_in_sidebar": false,
+			"sort_field": "created",
+			"sort_reverse": true,
+			"filter_rules": [],
+			"page_size": null,
+			"display_mode": null
+		}`,
+		checks: []string{
+			"Saved View (ID: 1)",
+			"Name: Updated View",
+		},
+	},
+	{
+		name: "UpdateTag",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateTag(c)
+		},
+		path:       "/api/tags/1/",
+		args:       `{"id": 1, "name": "Updated Tag"}`,
+		fieldName:  "name",
+		fieldValue: "Updated Tag",
+		responseJSON: `{
+			"id": 1,
+			"slug": "updated-tag",
+			"name": "Updated Tag",
+			"color": "#a6cee3",
+			"text_color": "#000000",
+			"match": "important",
+			"matching_algorithm": 1,
+			"is_insensitive": true,
+			"is_inbox_tag": false,
+			"document_count": 8,
+			"parent": null,
+			"children": []
+		}`,
+		checks: []string{
+			"Tag (ID: 1)",
+			"Name: Updated Tag",
+		},
+	},
+	{
+		name: "UpdateStoragePath",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateStoragePath(c)
+		},
+		path:       "/api/storage_paths/1/",
+		args:       `{"id": 1, "name": "Updated Path"}`,
+		fieldName:  "name",
+		fieldValue: "Updated Path",
+		responseJSON: `{
+			"id": 1,
+			"slug": "updated-path",
+			"name": "Updated Path",
+			"path": "{correspondent}/{title}",
+			"match": "invoice",
+			"matching_algorithm": 1,
+			"is_insensitive": true,
+			"document_count": 15
+		}`,
+		checks: []string{
+			"Storage Path (ID: 1)",
+			"Name: Updated Path",
 		},
 	},
 }

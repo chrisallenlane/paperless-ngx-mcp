@@ -152,6 +152,162 @@ func NewListDocumentTypes(c *client.Client) Tool {
 	}
 }
 
+// NewGetTask creates a tool to get a background task by ID.
+func NewGetTask(c *client.Client) Tool {
+	return &getTool[models.Task]{
+		client:  c,
+		desc:    "Get a background task by ID from Paperless-NGX",
+		schema:  idOnlySchema("Task ID"),
+		pathFmt: "/api/tasks/%d/",
+		format: func(_ int, v *models.Task) string {
+			return formatTask(v)
+		},
+	}
+}
+
+// NewListTags creates a tool to list tags.
+func NewListTags(c *client.Client) Tool {
+	return &listTool[models.Tag]{
+		client: c,
+		desc: "List tags in Paperless-NGX " +
+			"with optional filtering by name",
+		schema:   paginatedListSchema(),
+		basePath: "/api/tags/",
+		format:   formatTagList,
+	}
+}
+
+// NewGetTag creates a tool to get a tag by ID.
+func NewGetTag(c *client.Client) Tool {
+	return &getTool[models.Tag]{
+		client:  c,
+		desc:    "Get a tag by ID from Paperless-NGX",
+		schema:  idOnlySchema("Tag ID"),
+		pathFmt: "/api/tags/%d/",
+		format: func(_ int, v *models.Tag) string {
+			return formatTag(v)
+		},
+	}
+}
+
+// NewUpdateTag creates a tool to update a tag.
+func NewUpdateTag(c *client.Client) Tool {
+	return &patchTool[models.Tag]{
+		client:  c,
+		desc:    "Update a tag in Paperless-NGX",
+		schema:  tagSchema(true),
+		pathFmt: "/api/tags/%d/",
+		format:  formatTag,
+	}
+}
+
+// NewDeleteTag creates a tool to delete a tag.
+func NewDeleteTag(c *client.Client) Tool {
+	return &deleteTool{
+		client:       c,
+		desc:         "Delete a tag from Paperless-NGX",
+		schema:       idOnlySchema("Tag ID to delete"),
+		pathFmt:      "/api/tags/%d/",
+		resourceName: "Tag",
+	}
+}
+
+// NewListStoragePaths creates a tool to list storage paths.
+func NewListStoragePaths(c *client.Client) Tool {
+	return &listTool[models.StoragePath]{
+		client: c,
+		desc: "List storage paths in Paperless-NGX " +
+			"with optional filtering by name",
+		schema:   paginatedListSchema(),
+		basePath: "/api/storage_paths/",
+		format:   formatStoragePathList,
+	}
+}
+
+// NewGetStoragePath creates a tool to get a storage path by ID.
+func NewGetStoragePath(c *client.Client) Tool {
+	return &getTool[models.StoragePath]{
+		client: c,
+		desc: "Get a storage path by ID " +
+			"from Paperless-NGX",
+		schema:  idOnlySchema("Storage path ID"),
+		pathFmt: "/api/storage_paths/%d/",
+		format: func(
+			_ int,
+			v *models.StoragePath,
+		) string {
+			return formatStoragePath(v)
+		},
+	}
+}
+
+// NewUpdateStoragePath creates a tool to update a storage path.
+func NewUpdateStoragePath(c *client.Client) Tool {
+	return &patchTool[models.StoragePath]{
+		client: c,
+		desc: "Update a storage path " +
+			"in Paperless-NGX",
+		schema:  storagePathSchema(true),
+		pathFmt: "/api/storage_paths/%d/",
+		format:  formatStoragePath,
+	}
+}
+
+// NewDeleteStoragePath creates a tool to delete a storage path.
+func NewDeleteStoragePath(c *client.Client) Tool {
+	return &deleteTool{
+		client: c,
+		desc: "Delete a storage path " +
+			"from Paperless-NGX",
+		schema: idOnlySchema(
+			"Storage path ID to delete",
+		),
+		pathFmt:      "/api/storage_paths/%d/",
+		resourceName: "Storage path",
+	}
+}
+
+// NewListSavedViews creates a tool to list saved views.
+func NewListSavedViews(c *client.Client) Tool {
+	return &listTool[models.SavedView]{
+		client: c,
+		desc: "List saved views in Paperless-NGX " +
+			"with optional pagination",
+		schema:   paginationOnlySchema(),
+		basePath: "/api/saved_views/",
+		format:   formatSavedViewList,
+	}
+}
+
+// NewGetSavedView creates a tool to get a saved view by ID.
+func NewGetSavedView(c *client.Client) Tool {
+	return &getTool[models.SavedView]{
+		client: c,
+		desc: "Get a saved view by ID " +
+			"from Paperless-NGX",
+		schema:  idOnlySchema("Saved view ID"),
+		pathFmt: "/api/saved_views/%d/",
+		format: func(
+			_ int,
+			v *models.SavedView,
+		) string {
+			return formatSavedView(v)
+		},
+	}
+}
+
+// NewListTrash creates a tool to list soft-deleted documents.
+func NewListTrash(c *client.Client) Tool {
+	return &listTool[models.Document]{
+		client: c,
+		desc: "List soft-deleted documents in the " +
+			"Paperless-NGX trash",
+		schema:   paginationOnlySchema(),
+		basePath: "/api/trash/",
+		format:   formatDocumentList,
+	}
+}
+
 // --- Create tools ---
 
 // NewCreateCorrespondent creates a tool to create a correspondent.
@@ -208,6 +364,17 @@ func NewUpdateDocumentType(c *client.Client) Tool {
 		schema:  matchableResourceSchema("Document type", true),
 		pathFmt: "/api/document_types/%d/",
 		format:  formatDocumentType,
+	}
+}
+
+// NewUpdateSavedView creates a tool to update a saved view.
+func NewUpdateSavedView(c *client.Client) Tool {
+	return &patchTool[models.SavedView]{
+		client:  c,
+		desc:    "Update a saved view in Paperless-NGX",
+		schema:  savedViewUpdateSchema(),
+		pathFmt: "/api/saved_views/%d/",
+		format:  formatSavedView,
 	}
 }
 
@@ -269,6 +436,20 @@ func NewDeleteDocumentType(c *client.Client) Tool {
 		),
 		pathFmt:      "/api/document_types/%d/",
 		resourceName: "Document type",
+	}
+}
+
+// NewDeleteSavedView creates a tool to delete a saved view.
+func NewDeleteSavedView(c *client.Client) Tool {
+	return &deleteTool{
+		client: c,
+		desc: "Delete a saved view " +
+			"from Paperless-NGX",
+		schema: idOnlySchema(
+			"Saved view ID to delete",
+		),
+		pathFmt:      "/api/saved_views/%d/",
+		resourceName: "Saved view",
 	}
 }
 

@@ -1,5 +1,30 @@
 package tools
 
+// withIDForUpdate conditionally adds an "id" field to a schema
+// properties map and adjusts the required fields. When includeID
+// is true, the schema becomes an update schema (id required);
+// otherwise the original createRequired fields are used.
+func withIDForUpdate(
+	props map[string]interface{},
+	idDesc string,
+	includeID bool,
+	createRequired []string,
+) []string {
+	if includeID {
+		props["id"] = map[string]interface{}{
+			"type":        "integer",
+			"description": idDesc,
+		}
+		return []string{"id"}
+	}
+	return createRequired
+}
+
+const matchingAlgorithmDesc = "Matching algorithm: " +
+	"0=None, 1=Any word, 2=All words, " +
+	"3=Exact match, 4=Regex, " +
+	"5=Fuzzy word, 6=Automatic"
+
 // emptySchema returns an input schema with no parameters.
 func emptySchema() map[string]interface{} {
 	return map[string]interface{}{
@@ -20,6 +45,146 @@ func idOnlySchema(desc string) map[string]interface{} {
 		},
 		"required": []string{"id"},
 	}
+}
+
+// tagSchema returns an input schema for tag tools.
+// Set includeID to true for update tools, false for create.
+func tagSchema(
+	includeID bool,
+) map[string]interface{} {
+	props := map[string]interface{}{
+		"name": map[string]interface{}{
+			"type":        "string",
+			"description": "Tag name",
+		},
+		"color": map[string]interface{}{
+			"type": "string",
+			"description": "Hex color code " +
+				"(e.g., #a6cee3)",
+		},
+		"match": map[string]interface{}{
+			"type": "string",
+			"description": "Match pattern " +
+				"for auto-assignment",
+		},
+		"matching_algorithm": map[string]interface{}{
+			"type":        "integer",
+			"description": matchingAlgorithmDesc,
+		},
+		"is_insensitive": map[string]interface{}{
+			"type":        "boolean",
+			"description": "Case-insensitive matching",
+		},
+		"is_inbox_tag": map[string]interface{}{
+			"type": "boolean",
+			"description": "Automatically assign to " +
+				"newly consumed documents",
+		},
+		"parent": map[string]interface{}{
+			"type": "integer",
+			"description": "Parent tag ID " +
+				"for hierarchical tags",
+		},
+	}
+
+	required := withIDForUpdate(
+		props,
+		"Tag ID to update",
+		includeID,
+		[]string{"name"},
+	)
+
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": props,
+		"required":   required,
+	}
+}
+
+// storagePathSchema returns an input schema for storage path
+// tools. Set includeID to true for update tools, false for create.
+func storagePathSchema(
+	includeID bool,
+) map[string]interface{} {
+	props := map[string]interface{}{
+		"name": map[string]interface{}{
+			"type":        "string",
+			"description": "Storage path name",
+		},
+		"path": map[string]interface{}{
+			"type": "string",
+			"description": "Storage path template " +
+				"(e.g., {correspondent}/" +
+				"{document_type}/{title})",
+		},
+		"match": map[string]interface{}{
+			"type": "string",
+			"description": "Match pattern " +
+				"for auto-assignment",
+		},
+		"matching_algorithm": map[string]interface{}{
+			"type":        "integer",
+			"description": matchingAlgorithmDesc,
+		},
+		"is_insensitive": map[string]interface{}{
+			"type":        "boolean",
+			"description": "Case-insensitive matching",
+		},
+	}
+
+	required := withIDForUpdate(
+		props,
+		"Storage path ID to update",
+		includeID,
+		[]string{"name", "path"},
+	)
+
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": props,
+		"required":   required,
+	}
+}
+
+// taskListSchema returns an input schema for the task list tool.
+func taskListSchema() map[string]interface{} {
+	return map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"status": map[string]interface{}{
+				"type": "string",
+				"description": "Filter by status: " +
+					"FAILURE, PENDING, RECEIVED, " +
+					"RETRY, REVOKED, STARTED, SUCCESS",
+			},
+			"task_name": map[string]interface{}{
+				"type": "string",
+				"description": "Filter by task name: " +
+					"consume_file, train_classifier, " +
+					"check_sanity, index_optimize",
+			},
+			"type": map[string]interface{}{
+				"type": "string",
+				"description": "Filter by type: " +
+					"auto_task, scheduled_task, " +
+					"manual_task",
+			},
+			"task_id": map[string]interface{}{
+				"type": "string",
+				"description": "Filter by " +
+					"Celery task UUID",
+			},
+		},
+	}
+}
+
+// paginationOnlySchema returns an input schema with only page and
+// page_size parameters (no name filter).
+func paginationOnlySchema() map[string]interface{} {
+	s := paginatedListSchema()
+	props := s["properties"].(map[string]interface{})
+	delete(props, "name")
+	return s
 }
 
 // paginatedListSchema returns an input schema for paginated list endpoints.
@@ -61,11 +226,8 @@ func matchableResourceSchema(
 			"description": "Match pattern for auto-assignment",
 		},
 		"matching_algorithm": map[string]interface{}{
-			"type": "integer",
-			"description": "Matching algorithm: " +
-				"0=None, 1=Any word, 2=All words, " +
-				"3=Exact match, 4=Regex, " +
-				"5=Fuzzy word, 6=Automatic",
+			"type":        "integer",
+			"description": matchingAlgorithmDesc,
 		},
 		"is_insensitive": map[string]interface{}{
 			"type":        "boolean",
@@ -73,14 +235,12 @@ func matchableResourceSchema(
 		},
 	}
 
-	required := []string{"name"}
-	if includeID {
-		props["id"] = map[string]interface{}{
-			"type":        "integer",
-			"description": resourceName + " ID to update",
-		}
-		required = []string{"id"}
-	}
+	required := withIDForUpdate(
+		props,
+		resourceName+" ID to update",
+		includeID,
+		[]string{"name"},
+	)
 
 	return map[string]interface{}{
 		"type":       "object",
@@ -113,14 +273,12 @@ func customFieldSchema(
 		},
 	}
 
-	required := []string{"name", "data_type"}
-	if includeID {
-		props["id"] = map[string]interface{}{
-			"type":        "integer",
-			"description": "Custom field ID to update",
-		}
-		required = []string{"id"}
-	}
+	required := withIDForUpdate(
+		props,
+		"Custom field ID to update",
+		includeID,
+		[]string{"name", "data_type"},
+	)
 
 	return map[string]interface{}{
 		"type":       "object",
@@ -323,5 +481,109 @@ func configUpdateSchema() map[string]interface{} {
 			},
 		},
 		"required": []string{"id"},
+	}
+}
+
+// savedViewProps returns the shared property definitions for
+// saved view schemas.
+func savedViewProps() map[string]interface{} {
+	return map[string]interface{}{
+		"name": map[string]interface{}{
+			"type":        "string",
+			"description": "Saved view name",
+		},
+		"show_on_dashboard": map[string]interface{}{
+			"type": "boolean",
+			"description": "Show this view " +
+				"on the dashboard",
+		},
+		"show_in_sidebar": map[string]interface{}{
+			"type": "boolean",
+			"description": "Show this view " +
+				"in the sidebar",
+		},
+		"sort_field": map[string]interface{}{
+			"type": "string",
+			"description": "Field to sort by " +
+				"(e.g., created, added, title)",
+		},
+		"sort_reverse": map[string]interface{}{
+			"type": "boolean",
+			"description": "Reverse sort order " +
+				"(default false)",
+		},
+		"filter_rules": map[string]interface{}{
+			"type": "array",
+			"items": map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"rule_type": map[string]interface{}{
+						"type": "integer",
+						"description": "Filter rule type: " +
+							"0=title contains, " +
+							"1=content contains, " +
+							"3=correspondent is, " +
+							"4=document type is, " +
+							"5=is in inbox, " +
+							"6=has tag, " +
+							"17=does not have tag, " +
+							"20=fulltext query, " +
+							"25=storage path is " +
+							"(additional types 0-47 exist)",
+					},
+					"value": map[string]interface{}{
+						"type": "string",
+						"description": "Filter value " +
+							"(IDs as strings, " +
+							"or search text)",
+					},
+				},
+				"required": []string{
+					"rule_type",
+				},
+			},
+			"description": "Filter rules for " +
+				"this saved view",
+		},
+		"page_size": map[string]interface{}{
+			"type":        "integer",
+			"description": "Results per page",
+		},
+		"display_mode": map[string]interface{}{
+			"type": "string",
+			"description": "Display mode: table, " +
+				"smallCards, largeCards",
+		},
+	}
+}
+
+// savedViewCreateSchema returns an input schema for creating
+// a saved view.
+func savedViewCreateSchema() map[string]interface{} {
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": savedViewProps(),
+		"required": []string{
+			"name",
+			"show_on_dashboard",
+			"show_in_sidebar",
+			"filter_rules",
+		},
+	}
+}
+
+// savedViewUpdateSchema returns an input schema for updating
+// a saved view.
+func savedViewUpdateSchema() map[string]interface{} {
+	props := savedViewProps()
+	props["id"] = map[string]interface{}{
+		"type":        "integer",
+		"description": "Saved view ID to update",
+	}
+
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": props,
+		"required":   []string{"id"},
 	}
 }

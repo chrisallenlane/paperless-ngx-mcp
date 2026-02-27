@@ -187,6 +187,112 @@ Downloads a document file to the local filesystem. Requires `id` and
 `save_path`; optionally accepts `original` (boolean, default false) to
 download the original file instead of the archive version.
 
+### Tags
+
+#### `list_tags`
+Lists tags with optional filtering by name and pagination (page,
+page_size parameters).
+
+#### `get_tag`
+Gets a single tag by ID, including name, color, text color, match
+pattern, matching algorithm, inbox flag, parent, and children.
+
+#### `create_tag`
+Creates a new tag. Requires `name`; optionally accepts `color`,
+`match`, `matching_algorithm`, `is_insensitive`, `is_inbox_tag`,
+and `parent`.
+
+#### `update_tag`
+Updates an existing tag via PATCH. Requires `id`; any other tag
+field is optional.
+
+#### `delete_tag`
+Deletes a tag by ID.
+
+### Storage Paths
+
+#### `list_storage_paths`
+Lists storage paths with optional filtering by name and pagination
+(page, page_size parameters).
+
+#### `get_storage_path`
+Gets a single storage path by ID, including name, path template,
+match pattern, matching algorithm, and document count.
+
+#### `create_storage_path`
+Creates a new storage path. Requires `name` and `path` (template
+string, e.g., `{correspondent}/{document_type}/{title}`);
+optionally accepts `match`, `matching_algorithm`, and
+`is_insensitive`.
+
+#### `update_storage_path`
+Updates an existing storage path via PATCH. Requires `id`; any
+other storage path field is optional.
+
+#### `delete_storage_path`
+Deletes a storage path by ID.
+
+### Saved Views
+
+#### `list_saved_views`
+Lists saved views with optional pagination (page, page_size
+parameters).
+
+#### `get_saved_view`
+Gets a single saved view by ID, including name, dashboard/sidebar
+flags, sort configuration, display mode, and all filter rules
+with human-readable rule type names.
+
+#### `create_saved_view`
+Creates a new saved view. Requires `name`, `show_on_dashboard`,
+`show_in_sidebar`, and `filter_rules`; optionally accepts
+`sort_field`, `sort_reverse`, `page_size`, and `display_mode`.
+
+#### `update_saved_view`
+Updates an existing saved view via PATCH. Requires `id`; any
+other saved view field is optional.
+
+#### `delete_saved_view`
+Deletes a saved view by ID.
+
+### Document Notes
+
+#### `list_document_notes`
+Lists notes for a document. Requires `id`; optionally accepts
+`page` and `page_size`.
+
+#### `create_document_note`
+Adds a note to a document. Requires `id` and `note` (text
+content). Returns the full updated notes list for the document.
+
+#### `delete_document_note`
+Deletes a note from a document. Requires `document_id` and
+`note_id`. Returns the updated notes list after deletion.
+
+### Tasks
+
+#### `list_tasks`
+Lists background processing tasks. Optionally accepts `status`
+(FAILURE, PENDING, RECEIVED, RETRY, REVOKED, STARTED, SUCCESS),
+`task_name` (consume_file, train_classifier, check_sanity,
+index_optimize), `type` (auto_task, scheduled_task,
+manual_task), and `task_id` (Celery task UUID).
+
+#### `get_task`
+Gets a single background task by ID, including task UUID, status,
+type, file name, creation and completion dates, result, and
+related document.
+
+### Statistics and Trash
+
+#### `get_statistics`
+Gets document and resource count statistics from Paperless-NGX,
+including document counts, inbox counts, and per-type breakdowns.
+
+#### `list_trash`
+Lists soft-deleted documents in the Paperless-NGX trash, with
+optional pagination (page, page_size parameters).
+
 ## Development
 
 ### Build

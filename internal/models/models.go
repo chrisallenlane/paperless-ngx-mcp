@@ -183,6 +183,84 @@ type DocumentMetadata struct {
 	Lang                 string      `json:"lang"`
 }
 
+// Tag represents a Paperless-NGX tag.
+type Tag struct {
+	ID                int    `json:"id"`
+	Slug              string `json:"slug"`
+	Name              string `json:"name"`
+	Color             string `json:"color"`
+	TextColor         string `json:"text_color"`
+	Match             string `json:"match"`
+	MatchingAlgorithm int    `json:"matching_algorithm"`
+	IsInsensitive     bool   `json:"is_insensitive"`
+	IsInboxTag        bool   `json:"is_inbox_tag"`
+	DocumentCount     int    `json:"document_count"`
+	Parent            *int   `json:"parent"`
+	Children          []int  `json:"children"`
+}
+
+// StoragePath represents a Paperless-NGX storage path.
+type StoragePath struct {
+	ID                int    `json:"id"`
+	Slug              string `json:"slug"`
+	Name              string `json:"name"`
+	Path              string `json:"path"`
+	Match             string `json:"match"`
+	MatchingAlgorithm int    `json:"matching_algorithm"`
+	IsInsensitive     bool   `json:"is_insensitive"`
+	DocumentCount     int    `json:"document_count"`
+}
+
+// Task represents a Paperless-NGX background processing task.
+type Task struct {
+	ID              int     `json:"id"`
+	TaskID          string  `json:"task_id"`
+	TaskName        *string `json:"task_name"`
+	TaskFileName    *string `json:"task_file_name"`
+	DateCreated     *string `json:"date_created"`
+	DateDone        *string `json:"date_done"`
+	Type            string  `json:"type"`
+	Status          string  `json:"status"`
+	Result          *string `json:"result"`
+	Acknowledged    bool    `json:"acknowledged"`
+	RelatedDocument *string `json:"related_document"`
+}
+
+// Note represents a note attached to a Paperless-NGX document.
+type Note struct {
+	ID      int       `json:"id"`
+	Note    string    `json:"note"`
+	Created string    `json:"created"`
+	User    BasicUser `json:"user"`
+}
+
+// BasicUser represents a minimal Paperless-NGX user reference.
+type BasicUser struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
+// SavedView represents a saved document filter/sort configuration.
+type SavedView struct {
+	ID              int                   `json:"id"`
+	Name            string                `json:"name"`
+	ShowOnDashboard bool                  `json:"show_on_dashboard"`
+	ShowInSidebar   bool                  `json:"show_in_sidebar"`
+	SortField       *string               `json:"sort_field"`
+	SortReverse     bool                  `json:"sort_reverse"`
+	FilterRules     []SavedViewFilterRule `json:"filter_rules"`
+	PageSize        *int                  `json:"page_size"`
+	DisplayMode     *string               `json:"display_mode"`
+}
+
+// SavedViewFilterRule represents a filter rule in a saved view.
+type SavedViewFilterRule struct {
+	RuleType int     `json:"rule_type"`
+	Value    *string `json:"value"`
+}
+
 // DocumentSuggestions represents AI-generated suggestions for a document.
 type DocumentSuggestions struct {
 	Correspondents []int    `json:"correspondents"`

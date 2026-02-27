@@ -118,6 +118,72 @@ func (s *Server) registerTools() {
 	s.tools["download_document"] = tools.NewDownloadDocument(
 		s.client,
 	)
+	s.tools["list_tags"] = tools.NewListTags(
+		s.client,
+	)
+	s.tools["get_tag"] = tools.NewGetTag(
+		s.client,
+	)
+	s.tools["create_tag"] = tools.NewCreateTag(
+		s.client,
+	)
+	s.tools["update_tag"] = tools.NewUpdateTag(
+		s.client,
+	)
+	s.tools["delete_tag"] = tools.NewDeleteTag(
+		s.client,
+	)
+	s.tools["list_storage_paths"] = tools.NewListStoragePaths(
+		s.client,
+	)
+	s.tools["get_storage_path"] = tools.NewGetStoragePath(
+		s.client,
+	)
+	s.tools["create_storage_path"] = tools.NewCreateStoragePath(
+		s.client,
+	)
+	s.tools["update_storage_path"] = tools.NewUpdateStoragePath(
+		s.client,
+	)
+	s.tools["delete_storage_path"] = tools.NewDeleteStoragePath(
+		s.client,
+	)
+	s.tools["list_saved_views"] = tools.NewListSavedViews(
+		s.client,
+	)
+	s.tools["get_saved_view"] = tools.NewGetSavedView(
+		s.client,
+	)
+	s.tools["create_saved_view"] = tools.NewCreateSavedView(
+		s.client,
+	)
+	s.tools["update_saved_view"] = tools.NewUpdateSavedView(
+		s.client,
+	)
+	s.tools["delete_saved_view"] = tools.NewDeleteSavedView(
+		s.client,
+	)
+	s.tools["list_document_notes"] = tools.NewListDocumentNotes(
+		s.client,
+	)
+	s.tools["create_document_note"] = tools.NewCreateDocumentNote(
+		s.client,
+	)
+	s.tools["delete_document_note"] = tools.NewDeleteDocumentNote(
+		s.client,
+	)
+	s.tools["get_statistics"] = tools.NewGetStatistics(
+		s.client,
+	)
+	s.tools["list_tasks"] = tools.NewListTasks(
+		s.client,
+	)
+	s.tools["get_task"] = tools.NewGetTask(
+		s.client,
+	)
+	s.tools["list_trash"] = tools.NewListTrash(
+		s.client,
+	)
 }
 
 // Run starts the MCP server and processes requests

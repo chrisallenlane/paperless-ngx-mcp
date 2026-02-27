@@ -42,10 +42,24 @@ paperless-ngx-mcp/
 │       ├── formatters.go                # All response formatting functions
 │       ├── get_config.go                # Application config tool (array response)
 │       ├── get_config_test.go           # Config tool tests
+│       ├── get_statistics.go            # Statistics tool (dynamic response)
+│       ├── get_statistics_test.go       # Statistics tool tests
 │       ├── list_documents.go            # List documents tool (custom filters)
 │       ├── list_documents_test.go       # List documents tests
+│       ├── list_tasks.go                # List tasks tool (custom filters)
+│       ├── list_tasks_test.go           # List tasks tests
 │       ├── create_custom_field.go       # Create custom field tool
 │       ├── create_custom_field_test.go  # Create custom field tests
+│       ├── create_storage_path.go       # Create storage path tool
+│       ├── create_storage_path_test.go  # Create storage path tests
+│       ├── create_tag.go                # Create tag tool
+│       ├── create_tag_test.go           # Create tag tests
+│       ├── create_saved_view.go         # Create saved view tool
+│       ├── create_saved_view_test.go    # Create saved view tests
+│       ├── list_document_notes.go       # List document notes tool
+│       ├── create_document_note.go      # Create document note tool
+│       ├── delete_document_note.go      # Delete document note tool
+│       ├── document_notes_test.go       # Document notes tool tests
 │       ├── upload_document.go           # Upload document tool
 │       ├── upload_document_test.go      # Upload document tests
 │       ├── download_document.go         # Download document tool
@@ -61,6 +75,7 @@ paperless-ngx-mcp/
 │       ├── get_next_asn_test.go         # Get next ASN tests
 │       ├── get_status_test.go           # Status tool tests
 │       ├── list_document_types_test.go  # List document types tests
+│       ├── list_trash_test.go           # List trash tests
 │       ├── update_config_test.go        # Config update tests
 │       └── update_document_test.go      # Update document tests
 ├── Makefile                   # Build automation
@@ -207,10 +222,17 @@ JSON schema builder functions, separated from helpers to keep concerns distinct:
 - **`emptySchema()`** - Schema with no parameters (for tools like `get_status`, `get_next_asn`)
 - **`idOnlySchema(desc)`** - Schema with a single required `id` integer field
 - **`paginatedListSchema()`** - Schema for list tools (page, page_size, name filter)
+- **`paginationOnlySchema()`** - Schema for list tools without a name filter (page, page_size only); used by `list_saved_views` and `list_trash`
 - **`matchableResourceSchema(resourceName, includeID)`** - Schema for matchable resources (correspondents, document types) with name, match, matching_algorithm, is_insensitive fields; set `includeID` true for update tools
+- **`tagSchema(includeID)`** - Schema for tag tools with name, color, match, matching_algorithm, is_insensitive, is_inbox_tag, parent fields; set `includeID` true for update tools
+- **`storagePathSchema(includeID)`** - Schema for storage path tools with name, path, match, matching_algorithm, is_insensitive fields; set `includeID` true for update tools
+- **`taskListSchema()`** - Schema for the task list tool with status, task_name, type, task_id filters
+- **`savedViewCreateSchema()`** - Schema for creating a saved view with name, show_on_dashboard, show_in_sidebar, filter_rules (required) plus sort/display options
+- **`savedViewUpdateSchema()`** - Schema for updating a saved view; adds required `id` to the create schema fields
 - **`customFieldSchema(includeID)`** - Schema for custom field tools with name, data_type, extra_data fields
 - **`documentUpdateSchema()`** - Schema for the document update tool with all document fields
 - **`configUpdateSchema()`** - Schema for the config update tool with all config fields
+- **`withIDForUpdate(props, idDesc, includeID, createRequired)`** - Helper that conditionally adds an `id` field and adjusts required fields; used by schema builders that serve both create and update tools
 
 ### Response Formatters (`internal/tools/formatters.go`)
 
@@ -218,7 +240,8 @@ All response formatting functions are centralized here:
 
 - **`formatStatus`** - System status summary
 - **`formatConfig`** - Application configuration grouped by category
-- **`formatMatchableFields`** - Shared formatter for resources with matching fields (name, slug, match, algorithm, document count); used by correspondents and document types
+- **`formatStatistics`** - Document and resource count statistics (dynamic key-value map)
+- **`formatMatchableFields`** - Shared formatter for resources with matching fields (name, slug, match, algorithm, document count); used by correspondents, document types, tags, and storage paths
 - **`formatPaginatedList[T]`** - Generic paginated list formatter; handles empty message, header with count, per-item formatting, and pagination hint
 - **`formatCorrespondent`** / **`formatCorrespondentList`** - Correspondent details and lists
 - **`formatCustomField`** / **`formatCustomFieldList`** - Custom field details and lists
@@ -226,12 +249,18 @@ All response formatting functions are centralized here:
 - **`formatDocument`** / **`formatDocumentList`** - Document details and lists
 - **`formatDocumentMetadata`** - Document file metadata (checksums, sizes, OCR language)
 - **`formatDocumentSuggestions`** - AI-generated document suggestions
+- **`formatTag`** / **`formatTagList`** - Tag details and lists (includes color, inbox flag, parent/children)
+- **`formatStoragePath`** / **`formatStoragePathList`** - Storage path details and lists
+- **`formatTask`** / **`formatTaskArray`** - Single task details and task array list (note: tasks use an array response, not paginated)
+- **`formatNote`** / **`formatNoteList`** - Document note details and lists
+- **`formatSavedView`** / **`formatSavedViewList`** - Saved view details and lists with filter rule display
+- **`ruleTypeName`** - Filter rule type integer-to-name lookup (types 0–47)
 - **`formatOpt[T]`** / **`formatOptJSON`** - Nullable field formatting helpers
-- **`formatOptInt`** / **`formatOptStr`** - Nullable int and string formatting helpers
+- **`formatOptInt`** / **`formatOptStr`** / **`formatOptDate`** - Nullable int, string, and date formatting helpers
 - **`formatFileSize`** - Human-readable byte size formatting (B/KB/MB/GB)
 - **`formatIntSlice`** / **`formatStringSlice`** - Slice-to-string formatting helpers
 - **`matchingAlgorithmName`** - Matching algorithm integer-to-name lookup
-- **`formatDate`** / **`formatTaskLine`** - Date and task line formatting
+- **`formatDate`** / **`formatTaskLine`** - Date and task status line formatting
 
 ## Development Workflow
 
@@ -270,11 +299,11 @@ for examples).
 ### 1. Choose the factory type
 
 - **`noArgGetTool[T]`** - GET with no parameters (e.g., `get_status`, `get_next_asn`)
-- **`getTool[T]`** - GET by ID (e.g., `get_correspondent`, `get_document`)
-- **`listTool[T]`** - Paginated list with name filter (e.g., `list_correspondents`)
-- **`patchTool[T]`** - PATCH by ID (e.g., `update_correspondent`, `update_config`)
+- **`getTool[T]`** - GET by ID (e.g., `get_correspondent`, `get_document`, `get_task`)
+- **`listTool[T]`** - Paginated list with optional name filter (e.g., `list_correspondents`, `list_tags`, `list_saved_views`)
+- **`patchTool[T]`** - PATCH by ID (e.g., `update_correspondent`, `update_config`, `update_saved_view`)
 - **`createMatchableTool[T]`** - POST for resources with matching fields (e.g., `create_correspondent`)
-- **`deleteTool`** - DELETE by ID (e.g., `delete_correspondent`)
+- **`deleteTool`** - DELETE by ID (e.g., `delete_correspondent`, `delete_tag`, `delete_storage_path`)
 
 ### 2. Add a constructor in `internal/tools/tool_constructors.go`
 
@@ -319,9 +348,10 @@ make build
 
 Create a dedicated tool file (e.g., `my_tool.go`) only when the tool cannot use a
 factory type, such as when:
-- The API response is not a standard JSON object (e.g., array response like `get_config`)
-- The URL construction requires custom logic beyond standard pagination (e.g., `list_documents`)
-- The tool has multi-step behavior that does not map to a single HTTP operation
+- The API response is not a standard JSON object (e.g., array response like `get_config`, dynamic map like `get_statistics`)
+- The URL construction requires custom logic beyond standard pagination (e.g., `list_documents`, `list_tasks`)
+- The tool has multi-step behavior or non-standard HTTP semantics (e.g., `create_document_note` returns 200 not 201; `delete_document_note` returns 200 not 204)
+- The resource has required fields that don't fit the `matchableCreateParams` struct (e.g., `create_storage_path` requires both `name` and `path`; `create_saved_view` has required boolean fields)
 
 ## Code Quality Standards
 
@@ -541,6 +571,157 @@ are noted below.
 - **Input**: `id`, `save_path` (both required); `original` (optional boolean, default false)
 - **Output**: Confirmation with save path, size, and content type
 - **Note**: Dedicated file because it streams response body to file; validates `save_path` with `validateFilePath`
+
+### `list_tags` (`tool_constructors.go` — `NewListTags`)
+
+- **Endpoint**: `GET /api/tags/`
+- **Input**: `page`, `page_size`, `name` (all optional)
+- **Output**: Paginated tag list with inbox flag indicator
+- **Model**: `models.PaginatedList[models.Tag]`
+
+### `get_tag` (`tool_constructors.go` — `NewGetTag`)
+
+- **Endpoint**: `GET /api/tags/{id}/`
+- **Input**: `id` (required)
+- **Output**: Tag details including color, text color, inbox flag, parent, and children
+- **Model**: `models.Tag`
+
+### `create_tag` (`create_tag.go` — dedicated file)
+
+- **Endpoint**: `POST /api/tags/`
+- **Input**: `name` (required), `color`, `match`, `matching_algorithm`, `is_insensitive`, `is_inbox_tag`, `parent` (all optional)
+- **Output**: Created tag details
+- **Note**: Dedicated file because `tagSchema` includes fields (color, is_inbox_tag, parent) not in `matchableCreateParams`
+
+### `update_tag` (`tool_constructors.go` — `NewUpdateTag`)
+
+- **Endpoint**: `PATCH /api/tags/{id}/`
+- **Input**: `id` (required) + any tag fields
+- **Output**: Updated tag details
+
+### `delete_tag` (`tool_constructors.go` — `NewDeleteTag`)
+
+- **Endpoint**: `DELETE /api/tags/{id}/`
+- **Input**: `id` (required)
+- **Output**: Confirmation message
+
+### `list_storage_paths` (`tool_constructors.go` — `NewListStoragePaths`)
+
+- **Endpoint**: `GET /api/storage_paths/`
+- **Input**: `page`, `page_size`, `name` (all optional)
+- **Output**: Paginated storage path list
+- **Model**: `models.PaginatedList[models.StoragePath]`
+
+### `get_storage_path` (`tool_constructors.go` — `NewGetStoragePath`)
+
+- **Endpoint**: `GET /api/storage_paths/{id}/`
+- **Input**: `id` (required)
+- **Output**: Storage path details including path template and matching fields
+- **Model**: `models.StoragePath`
+
+### `create_storage_path` (`create_storage_path.go` — dedicated file)
+
+- **Endpoint**: `POST /api/storage_paths/`
+- **Input**: `name`, `path` (both required), `match`, `matching_algorithm`, `is_insensitive` (all optional)
+- **Output**: Created storage path details
+- **Note**: Dedicated file because `create_storage_path` requires both `name` and `path`, which doesn't fit `matchableCreateParams`
+
+### `update_storage_path` (`tool_constructors.go` — `NewUpdateStoragePath`)
+
+- **Endpoint**: `PATCH /api/storage_paths/{id}/`
+- **Input**: `id` (required) + any storage path fields
+- **Output**: Updated storage path details
+
+### `delete_storage_path` (`tool_constructors.go` — `NewDeleteStoragePath`)
+
+- **Endpoint**: `DELETE /api/storage_paths/{id}/`
+- **Input**: `id` (required)
+- **Output**: Confirmation message
+
+### `list_saved_views` (`tool_constructors.go` — `NewListSavedViews`)
+
+- **Endpoint**: `GET /api/saved_views/`
+- **Input**: `page`, `page_size` (both optional; no name filter)
+- **Output**: Paginated saved view list with dashboard/sidebar flags
+- **Model**: `models.PaginatedList[models.SavedView]`
+
+### `get_saved_view` (`tool_constructors.go` — `NewGetSavedView`)
+
+- **Endpoint**: `GET /api/saved_views/{id}/`
+- **Input**: `id` (required)
+- **Output**: Saved view details including all filter rules with human-readable rule type names
+- **Model**: `models.SavedView`
+
+### `create_saved_view` (`create_saved_view.go` — dedicated file)
+
+- **Endpoint**: `POST /api/saved_views/`
+- **Input**: `name`, `show_on_dashboard`, `show_in_sidebar`, `filter_rules` (all required); `sort_field`, `sort_reverse`, `page_size`, `display_mode` (all optional)
+- **Output**: Created saved view details
+- **Note**: Dedicated file because `show_on_dashboard`, `show_in_sidebar`, and `filter_rules` are required boolean/array fields that can't be expressed as `matchableCreateParams`
+
+### `update_saved_view` (`tool_constructors.go` — `NewUpdateSavedView`)
+
+- **Endpoint**: `PATCH /api/saved_views/{id}/`
+- **Input**: `id` (required) + any saved view fields
+- **Output**: Updated saved view details
+
+### `delete_saved_view` (`tool_constructors.go` — `NewDeleteSavedView`)
+
+- **Endpoint**: `DELETE /api/saved_views/{id}/`
+- **Input**: `id` (required)
+- **Output**: Confirmation message
+
+### `list_document_notes` (`list_document_notes.go` — dedicated file)
+
+- **Endpoint**: `GET /api/documents/{id}/notes/`
+- **Input**: `id` (required), `page`, `page_size` (optional)
+- **Output**: Paginated note list for the document
+- **Model**: `models.PaginatedList[models.Note]`
+- **Note**: Dedicated file because the endpoint is nested under a document ID
+
+### `create_document_note` (`create_document_note.go` — dedicated file)
+
+- **Endpoint**: `POST /api/documents/{id}/notes/`
+- **Input**: `id`, `note` (both required)
+- **Output**: Confirmation with the updated note list for the document
+- **Note**: Dedicated file because the endpoint is nested under a document ID and returns HTTP 200 (not 201) with the full updated notes list
+
+### `delete_document_note` (`delete_document_note.go` — dedicated file)
+
+- **Endpoint**: `DELETE /api/documents/{document_id}/notes/?id={note_id}`
+- **Input**: `document_id`, `note_id` (both required)
+- **Output**: Confirmation with the updated note list for the document
+- **Note**: Dedicated file because the note ID is passed as a query parameter (not path segment), the endpoint is nested under a document ID, and it returns HTTP 200 (not 204) with the remaining notes list
+
+### `get_statistics` (`get_statistics.go` — dedicated file)
+
+- **Endpoint**: `GET /api/statistics/`
+- **Input**: None
+- **Output**: Document and resource count statistics (formatted as sorted key-value pairs)
+- **Note**: Dedicated file because the response is a dynamic JSON object with no fixed schema; unmarshaled as `map[string]interface{}`
+
+### `list_tasks` (`list_tasks.go` — dedicated file)
+
+- **Endpoint**: `GET /api/tasks/`
+- **Input**: `status`, `task_name`, `type`, `task_id` (all optional)
+- **Output**: Task list formatted as an array summary
+- **Model**: `[]models.Task` (bare array, not paginated)
+- **Note**: Dedicated file because the endpoint returns a bare JSON array (not paginated) and filtering uses custom query parameters
+
+### `get_task` (`tool_constructors.go` — `NewGetTask`)
+
+- **Endpoint**: `GET /api/tasks/{id}/`
+- **Input**: `id` (required)
+- **Output**: Task details including UUID, status, type, file name, dates, result, and related document
+- **Model**: `models.Task`
+
+### `list_trash` (`tool_constructors.go` — `NewListTrash`)
+
+- **Endpoint**: `GET /api/trash/`
+- **Input**: `page`, `page_size` (both optional; no name filter)
+- **Output**: Paginated list of soft-deleted documents
+- **Model**: `models.PaginatedList[models.Document]`
+- **Note**: Uses `paginationOnlySchema()` (no name filter); reuses `formatDocumentList`
 
 ## Configuration
 

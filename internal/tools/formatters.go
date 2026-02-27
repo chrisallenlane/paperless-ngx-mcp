@@ -3,6 +3,7 @@ package tools
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/models"
@@ -20,6 +21,53 @@ var matchingAlgorithmNames = map[int]string{
 	4: "Regex",
 	5: "Fuzzy word",
 	6: "Automatic",
+}
+
+var ruleTypeNames = map[int]string{
+	0:  "Title contains",
+	1:  "Content contains",
+	2:  "ASN is",
+	3:  "Correspondent is",
+	4:  "Document type is",
+	5:  "Is in inbox",
+	6:  "Has tag",
+	7:  "Has any tag",
+	8:  "Created before",
+	9:  "Created after",
+	10: "Created year",
+	11: "Created month",
+	12: "Created day",
+	13: "Added before",
+	14: "Added after",
+	15: "Modified before",
+	16: "Modified after",
+	17: "Does not have tag",
+	18: "Does not have ASN",
+	19: "Title or content contains",
+	20: "Fulltext query",
+	21: "More like document",
+	22: "Has tags in",
+	23: "ASN greater than",
+	24: "ASN less than",
+	25: "Storage path is",
+	26: "Has correspondent in",
+	27: "Does not have correspondent in",
+	28: "Has document type in",
+	29: "Does not have document type in",
+	30: "Has storage path in",
+	31: "Does not have storage path in",
+	32: "Has tags all",
+	33: "Owner is",
+	34: "Owner is in",
+	35: "Does not have owner in",
+	36: "Correspondent starts with",
+	37: "Correspondent ends with",
+	38: "Title starts with",
+	39: "Title ends with",
+	44: "Has custom field value",
+	45: "Custom field query",
+	46: "Is shared by me",
+	47: "Has custom fields in",
 }
 
 func formatStatus(s *models.SystemStatus) string {
@@ -417,6 +465,167 @@ func formatOptStr(v *string) string {
 	return "(none)"
 }
 
+func formatTag(tag *models.Tag) string {
+	out := formatMatchableFields(
+		"Tag",
+		tag.ID,
+		tag.Name,
+		tag.Slug,
+		tag.Match,
+		tag.MatchingAlgorithm,
+		tag.IsInsensitive,
+		tag.DocumentCount,
+	)
+	out += fmt.Sprintf("  Color: %s\n", tag.Color)
+	out += fmt.Sprintf(
+		"  Text Color: %s\n",
+		tag.TextColor,
+	)
+	out += fmt.Sprintf(
+		"  Is Inbox Tag: %v\n",
+		tag.IsInboxTag,
+	)
+	out += fmt.Sprintf(
+		"  Parent: %s\n",
+		formatOptInt(tag.Parent),
+	)
+	out += fmt.Sprintf(
+		"  Children: %s\n",
+		formatIntSlice(tag.Children),
+	)
+
+	return out
+}
+
+func formatTagList(
+	list *models.PaginatedList[models.Tag],
+) string {
+	return formatPaginatedList(
+		list,
+		"No tags found.",
+		"Tags",
+		func(tag models.Tag) string {
+			extra := ""
+			if tag.IsInboxTag {
+				extra = " [inbox]"
+			}
+			return fmt.Sprintf(
+				"%d. %s (ID: %d) — %d documents%s\n",
+				tag.ID,
+				tag.Name,
+				tag.ID,
+				tag.DocumentCount,
+				extra,
+			)
+		},
+	)
+}
+
+func formatStoragePath(sp *models.StoragePath) string {
+	out := formatMatchableFields(
+		"Storage Path",
+		sp.ID,
+		sp.Name,
+		sp.Slug,
+		sp.Match,
+		sp.MatchingAlgorithm,
+		sp.IsInsensitive,
+		sp.DocumentCount,
+	)
+	out += fmt.Sprintf("  Path: %s\n", sp.Path)
+
+	return out
+}
+
+func formatStoragePathList(
+	list *models.PaginatedList[models.StoragePath],
+) string {
+	return formatPaginatedList(
+		list,
+		"No storage paths found.",
+		"Storage Paths",
+		func(sp models.StoragePath) string {
+			return fmt.Sprintf(
+				"%d. %s (ID: %d) — %d documents\n",
+				sp.ID,
+				sp.Name,
+				sp.ID,
+				sp.DocumentCount,
+			)
+		},
+	)
+}
+
+func formatTask(t *models.Task) string {
+	out := fmt.Sprintf("Task (ID: %d)\n", t.ID)
+	out += fmt.Sprintf("  Task UUID: %s\n", t.TaskID)
+	out += fmt.Sprintf("  Status: %s\n", t.Status)
+	out += fmt.Sprintf("  Type: %s\n", t.Type)
+	out += fmt.Sprintf(
+		"  Task Name: %s\n",
+		formatOptStr(t.TaskName),
+	)
+	out += fmt.Sprintf(
+		"  File Name: %s\n",
+		formatOptStr(t.TaskFileName),
+	)
+	out += fmt.Sprintf(
+		"  Created: %s\n",
+		formatOptDate(t.DateCreated),
+	)
+	out += fmt.Sprintf(
+		"  Done: %s\n",
+		formatOptDate(t.DateDone),
+	)
+	out += fmt.Sprintf(
+		"  Result: %s\n",
+		formatOptStr(t.Result),
+	)
+	out += fmt.Sprintf(
+		"  Acknowledged: %v\n",
+		t.Acknowledged,
+	)
+	out += fmt.Sprintf(
+		"  Related Document: %s\n",
+		formatOptStr(t.RelatedDocument),
+	)
+
+	return out
+}
+
+func formatTaskArray(tasks []models.Task) string {
+	if len(tasks) == 0 {
+		return "No tasks found."
+	}
+
+	out := fmt.Sprintf("Tasks: %d total\n\n", len(tasks))
+	for _, task := range tasks {
+		name := formatOptStr(task.TaskName)
+		out += fmt.Sprintf(
+			"%d. %s — %s",
+			task.ID,
+			name,
+			task.Status,
+		)
+		if task.TaskFileName != nil {
+			out += fmt.Sprintf(
+				" — %s",
+				*task.TaskFileName,
+			)
+		}
+		out += "\n"
+	}
+
+	return out
+}
+
+func formatOptDate(v *string) string {
+	if v != nil && *v != "" {
+		return formatDate(*v)
+	}
+	return "(none)"
+}
+
 func formatDocumentMetadata(
 	id int,
 	m *models.DocumentMetadata,
@@ -507,6 +716,141 @@ func formatDocumentSuggestions(
 	return out
 }
 
+func formatSavedView(v *models.SavedView) string {
+	out := fmt.Sprintf("Saved View (ID: %d)\n", v.ID)
+	out += fmt.Sprintf("  Name: %s\n", v.Name)
+	out += fmt.Sprintf(
+		"  Show on Dashboard: %v\n",
+		v.ShowOnDashboard,
+	)
+	out += fmt.Sprintf(
+		"  Show in Sidebar: %v\n",
+		v.ShowInSidebar,
+	)
+	out += fmt.Sprintf(
+		"  Sort Field: %s\n",
+		formatOptStr(v.SortField),
+	)
+	out += fmt.Sprintf(
+		"  Sort Reverse: %v\n",
+		v.SortReverse,
+	)
+	out += fmt.Sprintf(
+		"  Page Size: %s\n",
+		formatOptInt(v.PageSize),
+	)
+	out += fmt.Sprintf(
+		"  Display Mode: %s\n",
+		formatOptStr(v.DisplayMode),
+	)
+
+	if len(v.FilterRules) == 0 {
+		out += "  Filter Rules: (none)\n"
+	} else {
+		out += "  Filter Rules:\n"
+		for _, r := range v.FilterRules {
+			val := "(null)"
+			if r.Value != nil {
+				val = *r.Value
+			}
+			out += fmt.Sprintf(
+				"    - %s: %s\n",
+				ruleTypeName(r.RuleType),
+				val,
+			)
+		}
+	}
+
+	return out
+}
+
+func formatSavedViewList(
+	list *models.PaginatedList[models.SavedView],
+) string {
+	return formatPaginatedList(
+		list,
+		"No saved views found.",
+		"Saved Views",
+		func(v models.SavedView) string {
+			flags := ""
+			if v.ShowOnDashboard {
+				flags += " [dashboard]"
+			}
+			if v.ShowInSidebar {
+				flags += " [sidebar]"
+			}
+			return fmt.Sprintf(
+				"%d. %s (ID: %d) — "+
+					"%d filter rules%s\n",
+				v.ID,
+				v.Name,
+				v.ID,
+				len(v.FilterRules),
+				flags,
+			)
+		},
+	)
+}
+
+// ruleTypeName returns a human-readable name for a filter
+// rule type.
+func ruleTypeName(ruleType int) string {
+	if name, ok := ruleTypeNames[ruleType]; ok {
+		return name
+	}
+	return fmt.Sprintf("Rule type %d", ruleType)
+}
+
+func formatNote(note *models.Note) string {
+	out := fmt.Sprintf("Note (ID: %d)\n", note.ID)
+	out += fmt.Sprintf(
+		"  Author: %s\n",
+		note.User.Username,
+	)
+	out += fmt.Sprintf(
+		"  Created: %s\n",
+		formatDate(note.Created),
+	)
+	out += fmt.Sprintf("  Content: %s\n", note.Note)
+
+	return out
+}
+
+func formatNoteList(
+	docID int,
+	list *models.PaginatedList[models.Note],
+) string {
+	if list.Count == 0 {
+		return fmt.Sprintf(
+			"No notes found for document %d.",
+			docID,
+		)
+	}
+
+	out := fmt.Sprintf(
+		"Notes for Document %d: %d total\n\n",
+		docID,
+		list.Count,
+	)
+
+	for _, note := range list.Results {
+		out += fmt.Sprintf(
+			"--- Note %d (by %s on %s) ---\n%s\n\n",
+			note.ID,
+			note.User.Username,
+			formatDate(note.Created),
+			note.Note,
+		)
+	}
+
+	if list.Next != nil {
+		out += "(More notes available — " +
+			"use page parameter)\n"
+	}
+
+	return out
+}
+
 func formatIntSlice(ids []int) string {
 	if len(ids) == 0 {
 		return "(none)"
@@ -523,4 +867,89 @@ func formatStringSlice(items []string) string {
 		return "(none)"
 	}
 	return strings.Join(items, ", ")
+}
+
+func formatStatistics(
+	stats map[string]interface{},
+) string {
+	if len(stats) == 0 {
+		return "No statistics available."
+	}
+
+	out := "Paperless-NGX Statistics\n\n"
+
+	keys := make([]string, 0, len(stats))
+	for k := range stats {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		label := formatStatLabel(key)
+		switch v := stats[key].(type) {
+		case []interface{}:
+			out += fmt.Sprintf(
+				"  %s: %s\n",
+				label,
+				formatStatSlice(v),
+			)
+		default:
+			out += fmt.Sprintf(
+				"  %s: %s\n",
+				label,
+				formatStatValue(v),
+			)
+		}
+	}
+
+	return out
+}
+
+func formatStatLabel(key string) string {
+	words := strings.Split(key, "_")
+	for i, w := range words {
+		if len(w) > 0 {
+			words[i] = strings.ToUpper(w[:1]) + w[1:]
+		}
+	}
+	return strings.Join(words, " ")
+}
+
+func formatStatValue(v interface{}) string {
+	if f, ok := v.(float64); ok {
+		if f == float64(int64(f)) {
+			return fmt.Sprintf("%d", int64(f))
+		}
+		return fmt.Sprintf("%.2f", f)
+	}
+	return fmt.Sprintf("%v", v)
+}
+
+func formatStatSlice(items []interface{}) string {
+	if len(items) == 0 {
+		return "(none)"
+	}
+
+	parts := make([]string, len(items))
+	for i, item := range items {
+		switch v := item.(type) {
+		case map[string]interface{}:
+			pairs := make([]string, 0, len(v))
+			for k, val := range v {
+				pairs = append(
+					pairs,
+					fmt.Sprintf(
+						"%s=%s",
+						k,
+						formatStatValue(val),
+					),
+				)
+			}
+			sort.Strings(pairs)
+			parts[i] = strings.Join(pairs, ", ")
+		default:
+			parts[i] = formatStatValue(item)
+		}
+	}
+	return strings.Join(parts, "; ")
 }
