@@ -144,6 +144,49 @@ document type field is optional.
 #### `delete_document_type`
 Deletes a document type by ID.
 
+### Documents
+
+#### `list_documents`
+Lists documents with optional filtering and full-text search. Supports
+`page`, `page_size`, `search` (full-text), `correspondent` (ID),
+`document_type` (ID), `tags` (array of IDs, matches all), and
+`is_in_inbox` (boolean).
+
+#### `get_document`
+Gets a single document by ID, including title, correspondent, document
+type, tags, dates, ASN, file names, MIME type, page count, custom
+fields, and a content preview.
+
+#### `update_document`
+Updates an existing document via PATCH. Requires `id`; optionally
+accepts `title`, `correspondent`, `document_type`, `storage_path`,
+`tags`, `archive_serial_number`, `created`, and `custom_fields`.
+
+#### `delete_document`
+Deletes a document by ID.
+
+#### `get_document_metadata`
+Gets file-level metadata for a document, including checksums, sizes,
+MIME type, archive version details, and OCR language.
+
+#### `get_document_suggestions`
+Gets AI-generated suggestions for a document, including correspondent,
+document type, storage path, tags, and dates.
+
+#### `get_next_asn`
+Gets the next available archive serial number (ASN).
+
+#### `upload_document`
+Uploads a local file to Paperless-NGX for processing. Requires
+`file_path` (absolute); optionally accepts `title`, `correspondent`,
+`document_type`, `storage_path`, `tags`, `archive_serial_number`, and
+`created`. Returns a task ID for async processing.
+
+#### `download_document`
+Downloads a document file to the local filesystem. Requires `id` and
+`save_path`; optionally accepts `original` (boolean, default false) to
+download the original file instead of the archive version.
+
 ## Development
 
 ### Build

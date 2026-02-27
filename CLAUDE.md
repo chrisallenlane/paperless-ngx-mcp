@@ -72,7 +72,25 @@ paperless-ngx-mcp/
 │       ├── update_document_type.go      # Update document type tool
 │       ├── update_document_type_test.go # Update document type tests
 │       ├── delete_document_type.go      # Delete document type tool
-│       └── delete_document_type_test.go # Delete document type tests
+│       ├── delete_document_type_test.go # Delete document type tests
+│       ├── list_documents.go            # List documents tool
+│       ├── list_documents_test.go       # List documents tests
+│       ├── get_document.go              # Get document tool
+│       ├── get_document_test.go         # Get document tests
+│       ├── update_document.go           # Update document tool
+│       ├── update_document_test.go      # Update document tests
+│       ├── delete_document.go           # Delete document tool
+│       ├── delete_document_test.go      # Delete document tests
+│       ├── get_document_metadata.go     # Get document metadata tool
+│       ├── get_document_metadata_test.go # Get document metadata tests
+│       ├── get_document_suggestions.go  # Get document suggestions tool
+│       ├── get_document_suggestions_test.go # Get document suggestions tests
+│       ├── get_next_asn.go              # Get next ASN tool
+│       ├── get_next_asn_test.go         # Get next ASN tests
+│       ├── upload_document.go           # Upload document tool
+│       ├── upload_document_test.go      # Upload document tests
+│       ├── download_document.go         # Download document tool
+│       └── download_document_test.go    # Download document tests
 ├── Makefile                   # Build automation
 ├── CLAUDE.md                  # This file
 ├── README.md                  # User-facing documentation
@@ -112,6 +130,7 @@ HTTP client for Paperless-NGX API requests:
 - `Post(ctx, path, body)` - POST requests with JSON body
 - `Patch(ctx, path, body)` - PATCH requests with JSON body
 - `Delete(ctx, path)` - DELETE requests
+- `PostMultipart(ctx, path, body, contentType)` - POST requests with multipart/form-data body
 
 **Testing Support:**
 - `HTTPDoer` interface allows mocking HTTP requests
@@ -184,6 +203,9 @@ Shared utility functions to eliminate code duplication:
 - **`matchableCreateParams`** - Common params struct for creating matchable resources
 - **`listParams`** - Common pagination and filter parameters
 
+**File path helpers:**
+- **`validateFilePath(path)`** - Validates that a file path is absolute and contains no `..` traversal sequences
+
 **List query helpers:**
 - **`buildListPath(basePath, args)`** - Build URL path with query parameters from list args
 
@@ -196,7 +218,14 @@ All response formatting functions are centralized here:
 - **`formatCorrespondent`** / **`formatCorrespondentList`** - Correspondent details and lists
 - **`formatCustomField`** / **`formatCustomFieldList`** - Custom field details and lists
 - **`formatDocumentType`** / **`formatDocumentTypeList`** - Document type details and lists
+- **`formatDocument`** / **`formatDocumentList`** - Document details and lists
+- **`formatDocumentMetadata`** - Document file metadata (checksums, sizes, OCR language)
+- **`formatDocumentSuggestions`** - AI-generated document suggestions
 - **`formatOpt[T]`** / **`formatOptJSON`** - Nullable field formatting helpers
+- **`formatOptInt`** / **`formatOptStr`** - Nullable int and string formatting helpers
+- **`formatFileSize`** - Human-readable byte size formatting (B/KB/MB/GB)
+- **`formatIntSlice`** / **`formatStringSlice`** - Slice-to-string formatting helpers
+- **`matchingAlgorithmName`** / **`matchDisplayOrDefault`** - Matching algorithm name lookup
 - **`formatDate`** / **`formatTaskLine`** - Date and task line formatting
 
 ## Development Workflow
@@ -459,6 +488,69 @@ Every new tool should have:
 - **Endpoint**: `DELETE /api/document_types/{id}/`
 - **Input**: `id` (required)
 - **Output**: Confirmation message
+
+### `list_documents` (`internal/tools/list_documents.go`)
+
+- **Endpoint**: `GET /api/documents/`
+- **Input**: `page`, `page_size`, `search`, `correspondent` (ID), `document_type` (ID), `tags` (array of IDs), `is_in_inbox` (all optional)
+- **Output**: Paginated document list with concise summaries
+- **Model**: `models.PaginatedList[models.Document]`
+- **Note**: Uses file-local `buildDocumentListPath` (not shared `buildListPath`) for document-specific filters
+
+### `get_document` (`internal/tools/get_document.go`)
+
+- **Endpoint**: `GET /api/documents/{id}/`
+- **Input**: `id` (required)
+- **Output**: Full document details including custom fields and content preview
+- **Model**: `models.Document`
+
+### `update_document` (`internal/tools/update_document.go`)
+
+- **Endpoint**: `PATCH /api/documents/{id}/`
+- **Input**: `id` (required) + `title`, `correspondent`, `document_type`, `storage_path`, `tags`, `archive_serial_number`, `created`, `custom_fields` (all optional)
+- **Output**: Updated document details
+
+### `delete_document` (`internal/tools/delete_document.go`)
+
+- **Endpoint**: `DELETE /api/documents/{id}/`
+- **Input**: `id` (required)
+- **Output**: Confirmation message
+
+### `get_document_metadata` (`internal/tools/get_document_metadata.go`)
+
+- **Endpoint**: `GET /api/documents/{id}/metadata/`
+- **Input**: `id` (required)
+- **Output**: File metadata (checksums, sizes, MIME type, archive version, OCR language)
+- **Model**: `models.DocumentMetadata`
+
+### `get_document_suggestions` (`internal/tools/get_document_suggestions.go`)
+
+- **Endpoint**: `GET /api/documents/{id}/suggestions/`
+- **Input**: `id` (required)
+- **Output**: AI-generated suggestions (correspondents, document types, storage paths, tags, dates)
+- **Model**: `models.DocumentSuggestions`
+
+### `get_next_asn` (`internal/tools/get_next_asn.go`)
+
+- **Endpoint**: `GET /api/documents/next_asn/`
+- **Input**: None
+- **Output**: Next available archive serial number
+- **Note**: Response is a bare integer, not a JSON object
+
+### `upload_document` (`internal/tools/upload_document.go`)
+
+- **Endpoint**: `POST /api/documents/post_document/`
+- **Content-Type**: `multipart/form-data`
+- **Input**: `file_path` (required, must be absolute) + `title`, `correspondent`, `document_type`, `storage_path`, `tags`, `archive_serial_number`, `created` (all optional)
+- **Output**: Confirmation with filename, size, and task ID
+- **Note**: Uses `client.PostMultipart`; expects HTTP 200; returns a task ID for async processing
+
+### `download_document` (`internal/tools/download_document.go`)
+
+- **Endpoint**: `GET /api/documents/{id}/download/`
+- **Input**: `id`, `save_path` (both required); `original` (optional boolean, default false)
+- **Output**: Confirmation with save path, size, and content type
+- **Note**: Streams response body to file; validates `save_path` with `validateFilePath`
 
 ## Configuration
 
