@@ -119,15 +119,7 @@ func buildDocumentListPath(args json.RawMessage) (string, error) {
 	}
 
 	q := url.Values{}
-	if params.Page != nil {
-		q.Set("page", fmt.Sprintf("%d", *params.Page))
-	}
-	if params.PageSize != nil {
-		q.Set(
-			"page_size",
-			fmt.Sprintf("%d", *params.PageSize),
-		)
-	}
+	addPaginationQuery(q, params.Page, params.PageSize)
 	if params.Search != "" {
 		q.Set("search", params.Search)
 	}

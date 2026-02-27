@@ -81,18 +81,7 @@ func (t *ListDocumentNotes) Execute(
 	)
 
 	q := url.Values{}
-	if params.Page != nil {
-		q.Set(
-			"page",
-			fmt.Sprintf("%d", *params.Page),
-		)
-	}
-	if params.PageSize != nil {
-		q.Set(
-			"page_size",
-			fmt.Sprintf("%d", *params.PageSize),
-		)
-	}
+	addPaginationQuery(q, params.Page, params.PageSize)
 	path = appendQuery(path, q)
 
 	body, err := doAPIRequest(ctx, t.client, path)

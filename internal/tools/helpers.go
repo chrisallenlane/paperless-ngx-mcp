@@ -248,6 +248,24 @@ type listParams struct {
 	Name     *string `json:"name"`
 }
 
+// addPaginationQuery adds page and page_size query parameters
+// from optional values.
+func addPaginationQuery(
+	q url.Values,
+	page *int,
+	pageSize *int,
+) {
+	if page != nil {
+		q.Set("page", fmt.Sprintf("%d", *page))
+	}
+	if pageSize != nil {
+		q.Set(
+			"page_size",
+			fmt.Sprintf("%d", *pageSize),
+		)
+	}
+}
+
 // buildListPath constructs a paginated API path with query parameters.
 func buildListPath(
 	basePath string,
@@ -259,15 +277,7 @@ func buildListPath(
 	}
 
 	q := url.Values{}
-	if params.Page != nil {
-		q.Set("page", fmt.Sprintf("%d", *params.Page))
-	}
-	if params.PageSize != nil {
-		q.Set(
-			"page_size",
-			fmt.Sprintf("%d", *params.PageSize),
-		)
-	}
+	addPaginationQuery(q, params.Page, params.PageSize)
 	if params.Name != nil {
 		q.Set("name__icontains", *params.Name)
 	}
