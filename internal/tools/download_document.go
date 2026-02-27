@@ -146,7 +146,7 @@ func (t *DownloadDocument) Execute(
 			"Size: %s\n"+
 			"Content-Type: %s",
 		params.SavePath,
-		formatFileSize(int(written)),
+		formatFileSize(written),
 		contentType,
 	), nil
 }

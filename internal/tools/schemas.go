@@ -181,10 +181,19 @@ func taskListSchema() map[string]interface{} {
 // paginationOnlySchema returns an input schema with only page and
 // page_size parameters (no name filter).
 func paginationOnlySchema() map[string]interface{} {
-	s := paginatedListSchema()
-	props := s["properties"].(map[string]interface{})
-	delete(props, "name")
-	return s
+	return map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"page": map[string]interface{}{
+				"type":        "integer",
+				"description": "Page number (default 1)",
+			},
+			"page_size": map[string]interface{}{
+				"type":        "integer",
+				"description": "Results per page (default 25)",
+			},
+		},
+	}
 }
 
 // paginatedListSchema returns an input schema for paginated list endpoints.

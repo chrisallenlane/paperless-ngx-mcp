@@ -9,8 +9,6 @@ import (
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/models"
 )
 
-const bytesPerTB = 1024 * 1024 * 1024 * 1024
-
 const paginationHint = "\n(more results available — use page parameter)"
 
 var matchingAlgorithmNames = map[int]string{
@@ -71,20 +69,17 @@ var ruleTypeNames = map[int]string{
 }
 
 func formatStatus(s *models.SystemStatus) string {
-	totalTB := float64(s.Storage.Total) / bytesPerTB
-	availTB := float64(s.Storage.Available) / bytesPerTB
-
 	out := fmt.Sprintf(
 		"Paperless-NGX Status\nVersion: %s\nOS: %s\nInstall: %s\n\n"+
-			"Storage: %.2f TB available of %.2f TB\n\n"+
+			"Storage: %s available of %s\n\n"+
 			"Database: %s - %s\n"+
 			"Redis: %s\n"+
 			"Celery: %s\n",
 		s.PNGXVersion,
 		s.ServerOS,
 		s.InstallType,
-		availTB,
-		totalTB,
+		formatFileSize(s.Storage.Available),
+		formatFileSize(s.Storage.Total),
 		s.Database.Type,
 		s.Database.Status,
 		s.Tasks.RedisStatus,
@@ -635,7 +630,10 @@ func formatDocumentMetadata(
 	out += "\nOriginal File:\n"
 	out += fmt.Sprintf("  Filename: %s\n", m.OriginalFilename)
 	out += fmt.Sprintf("  MIME Type: %s\n", m.OriginalMimeType)
-	out += fmt.Sprintf("  Size: %s\n", formatFileSize(m.OriginalSize))
+	out += fmt.Sprintf(
+		"  Size: %s\n",
+		formatFileSize(int64(m.OriginalSize)),
+	)
 	out += fmt.Sprintf("  Checksum: %s\n", m.OriginalChecksum)
 
 	out += "\nArchive File:\n"
@@ -650,7 +648,7 @@ func formatDocumentMetadata(
 		)
 		out += fmt.Sprintf(
 			"  Size: %s\n",
-			formatFileSize(m.ArchiveSize),
+			formatFileSize(int64(m.ArchiveSize)),
 		)
 		out += fmt.Sprintf(
 			"  Checksum: %s\n",
@@ -667,20 +665,35 @@ func formatDocumentMetadata(
 	return out
 }
 
-func formatFileSize(bytes int) string {
+func formatFileSize(bytes int64) string {
 	const (
 		kb = 1024
 		mb = kb * 1024
 		gb = mb * 1024
+		tb = gb * 1024
 	)
 
 	switch {
+	case bytes >= tb:
+		return fmt.Sprintf(
+			"%.2f TB",
+			float64(bytes)/float64(tb),
+		)
 	case bytes >= gb:
-		return fmt.Sprintf("%.2f GB", float64(bytes)/float64(gb))
+		return fmt.Sprintf(
+			"%.2f GB",
+			float64(bytes)/float64(gb),
+		)
 	case bytes >= mb:
-		return fmt.Sprintf("%.2f MB", float64(bytes)/float64(mb))
+		return fmt.Sprintf(
+			"%.2f MB",
+			float64(bytes)/float64(mb),
+		)
 	case bytes >= kb:
-		return fmt.Sprintf("%.2f KB", float64(bytes)/float64(kb))
+		return fmt.Sprintf(
+			"%.2f KB",
+			float64(bytes)/float64(kb),
+		)
 	default:
 		return fmt.Sprintf("%d bytes", bytes)
 	}

@@ -227,7 +227,7 @@ func (t *UploadDocument) Execute(
 			"Size: %s\n"+
 			"Task ID: %s",
 		filepath.Base(params.FilePath),
-		formatFileSize(int(stat.Size())),
+		formatFileSize(stat.Size()),
 		taskID,
 	), nil
 }
