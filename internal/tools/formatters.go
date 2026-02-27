@@ -215,22 +215,18 @@ func formatCorrespondent(c *models.Correspondent) string {
 	return out
 }
 
-func formatCorrespondentList(
-	list *models.PaginatedList[models.Correspondent],
+func formatPaginatedList[T any](
+	list *models.PaginatedList[T],
+	emptyMsg, header string,
+	formatItem func(T) string,
 ) string {
 	if list.Count == 0 {
-		return "No correspondents found."
+		return emptyMsg
 	}
 
-	out := fmt.Sprintf("Correspondents: %d total\n\n", list.Count)
-	for _, c := range list.Results {
-		out += fmt.Sprintf(
-			"%d. %s (ID: %d) — %d documents\n",
-			c.ID,
-			c.Name,
-			c.ID,
-			c.DocumentCount,
-		)
+	out := fmt.Sprintf("%s: %d total\n\n", header, list.Count)
+	for _, item := range list.Results {
+		out += formatItem(item)
 	}
 
 	if list.Next != nil {
@@ -238,6 +234,25 @@ func formatCorrespondentList(
 	}
 
 	return out
+}
+
+func formatCorrespondentList(
+	list *models.PaginatedList[models.Correspondent],
+) string {
+	return formatPaginatedList(
+		list,
+		"No correspondents found.",
+		"Correspondents",
+		func(c models.Correspondent) string {
+			return fmt.Sprintf(
+				"%d. %s (ID: %d) — %d documents\n",
+				c.ID,
+				c.Name,
+				c.ID,
+				c.DocumentCount,
+			)
+		},
+	)
 }
 
 func formatCustomField(f *models.CustomField) string {
@@ -258,27 +273,21 @@ func formatCustomField(f *models.CustomField) string {
 func formatCustomFieldList(
 	list *models.PaginatedList[models.CustomField],
 ) string {
-	if list.Count == 0 {
-		return "No custom fields found."
-	}
-
-	out := fmt.Sprintf("Custom Fields: %d total\n\n", list.Count)
-	for _, f := range list.Results {
-		out += fmt.Sprintf(
-			"%d. %s (ID: %d) — type: %s, %d documents\n",
-			f.ID,
-			f.Name,
-			f.ID,
-			f.DataType,
-			f.DocumentCount,
-		)
-	}
-
-	if list.Next != nil {
-		out += paginationHint
-	}
-
-	return out
+	return formatPaginatedList(
+		list,
+		"No custom fields found.",
+		"Custom Fields",
+		func(f models.CustomField) string {
+			return fmt.Sprintf(
+				"%d. %s (ID: %d) — type: %s, %d documents\n",
+				f.ID,
+				f.Name,
+				f.ID,
+				f.DataType,
+				f.DocumentCount,
+			)
+		},
+	)
 }
 
 func formatDocumentType(dt *models.DocumentType) string {
@@ -297,29 +306,20 @@ func formatDocumentType(dt *models.DocumentType) string {
 func formatDocumentTypeList(
 	list *models.PaginatedList[models.DocumentType],
 ) string {
-	if list.Count == 0 {
-		return "No document types found."
-	}
-
-	out := fmt.Sprintf(
-		"Document Types: %d total\n\n",
-		list.Count,
+	return formatPaginatedList(
+		list,
+		"No document types found.",
+		"Document Types",
+		func(dt models.DocumentType) string {
+			return fmt.Sprintf(
+				"%d. %s (ID: %d) — %d documents\n",
+				dt.ID,
+				dt.Name,
+				dt.ID,
+				dt.DocumentCount,
+			)
+		},
 	)
-	for _, dt := range list.Results {
-		out += fmt.Sprintf(
-			"%d. %s (ID: %d) — %d documents\n",
-			dt.ID,
-			dt.Name,
-			dt.ID,
-			dt.DocumentCount,
-		)
-	}
-
-	if list.Next != nil {
-		out += paginationHint
-	}
-
-	return out
 }
 
 func formatDocument(d *models.Document) string {
@@ -386,37 +386,25 @@ func formatDocument(d *models.Document) string {
 func formatDocumentList(
 	list *models.PaginatedList[models.Document],
 ) string {
-	if list.Count == 0 {
-		return "No documents found."
-	}
-
-	out := fmt.Sprintf("Documents: %d total\n\n", list.Count)
-	for _, d := range list.Results {
-		corr := formatOptInt(d.Correspondent)
-		docType := formatOptInt(d.DocumentType)
-		asn := formatOptInt(d.ArchiveSerialNumber)
-
-		out += fmt.Sprintf(
-			"%d. %s (ID: %d)\n",
-			d.ID,
-			d.Title,
-			d.ID,
-		)
-		out += fmt.Sprintf(
-			"   Correspondent: %s | Type: %s | "+
-				"ASN: %s | Created: %s\n",
-			corr,
-			docType,
-			asn,
-			formatDate(d.Created),
-		)
-	}
-
-	if list.Next != nil {
-		out += paginationHint
-	}
-
-	return out
+	return formatPaginatedList(
+		list,
+		"No documents found.",
+		"Documents",
+		func(d models.Document) string {
+			return fmt.Sprintf(
+				"%d. %s (ID: %d)\n"+
+					"   Correspondent: %s | Type: %s"+
+					" | ASN: %s | Created: %s\n",
+				d.ID,
+				d.Title,
+				d.ID,
+				formatOptInt(d.Correspondent),
+				formatOptInt(d.DocumentType),
+				formatOptInt(d.ArchiveSerialNumber),
+				formatDate(d.Created),
+			)
+		},
+	)
 }
 
 func formatOptInt(v *int) string {
