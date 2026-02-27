@@ -25,16 +25,7 @@ func (t *DeleteCustomField) Description() string {
 
 // InputSchema returns the JSON schema for the tool's input parameters.
 func (t *DeleteCustomField) InputSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"id": map[string]interface{}{
-				"type":        "integer",
-				"description": "Custom field ID to delete",
-			},
-		},
-		"required": []string{"id"},
-	}
+	return idOnlySchema("Custom field ID to delete")
 }
 
 // Execute runs the tool and returns a confirmation message.
@@ -42,18 +33,12 @@ func (t *DeleteCustomField) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	var params struct {
-		ID int `json:"id"`
-	}
-	if err := json.Unmarshal(args, &params); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
+	id, err := parseIDArg(args)
+	if err != nil {
+		return "", err
 	}
 
-	if params.ID <= 0 {
-		return "", fmt.Errorf("id must be a positive integer")
-	}
-
-	path := fmt.Sprintf("/api/custom_fields/%d/", params.ID)
+	path := fmt.Sprintf("/api/custom_fields/%d/", id)
 
 	if err := doDeleteRequest(ctx, t.client, path); err != nil {
 		return "", fmt.Errorf(
@@ -64,6 +49,6 @@ func (t *DeleteCustomField) Execute(
 
 	return fmt.Sprintf(
 		"Custom field %d deleted successfully.",
-		params.ID,
+		id,
 	), nil
 }

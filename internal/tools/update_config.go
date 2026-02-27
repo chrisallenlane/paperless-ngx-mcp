@@ -154,32 +154,9 @@ func (t *UpdateConfig) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	// Parse the full args to extract id and build the patch body
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(args, &raw); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
-	}
-
-	idRaw, ok := raw["id"]
-	if !ok {
-		return "", fmt.Errorf("id is required")
-	}
-
-	var id int64
-	if err := json.Unmarshal(idRaw, &id); err != nil {
-		return "", fmt.Errorf("failed to parse id: %w", err)
-	}
-
-	if id <= 0 {
-		return "", fmt.Errorf("id must be a positive integer")
-	}
-
-	// Build patch body with only the provided fields (exclude id)
-	patchBody := make(map[string]json.RawMessage)
-	for k, v := range raw {
-		if k != "id" {
-			patchBody[k] = v
-		}
+	id, patchBody, err := parsePatchArgs(args)
+	if err != nil {
+		return "", err
 	}
 
 	path := fmt.Sprintf("/api/config/%d/", id)

@@ -26,16 +26,7 @@ func (t *GetCustomField) Description() string {
 
 // InputSchema returns the JSON schema for the tool's input parameters.
 func (t *GetCustomField) InputSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"id": map[string]interface{}{
-				"type":        "integer",
-				"description": "Custom field ID",
-			},
-		},
-		"required": []string{"id"},
-	}
+	return idOnlySchema("Custom field ID")
 }
 
 // Execute runs the tool and returns a formatted custom field summary.
@@ -43,18 +34,12 @@ func (t *GetCustomField) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	var params struct {
-		ID int `json:"id"`
-	}
-	if err := json.Unmarshal(args, &params); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
+	id, err := parseIDArg(args)
+	if err != nil {
+		return "", err
 	}
 
-	if params.ID <= 0 {
-		return "", fmt.Errorf("id must be a positive integer")
-	}
-
-	path := fmt.Sprintf("/api/custom_fields/%d/", params.ID)
+	path := fmt.Sprintf("/api/custom_fields/%d/", id)
 
 	body, err := doAPIRequest(ctx, t.client, path)
 	if err != nil {
@@ -73,19 +58,4 @@ func (t *GetCustomField) Execute(
 	}
 
 	return formatCustomField(&field), nil
-}
-
-func formatCustomField(f *models.CustomField) string {
-	extraData := "(none)"
-	if f.ExtraData != nil && string(f.ExtraData) != "null" {
-		extraData = string(f.ExtraData)
-	}
-
-	out := fmt.Sprintf("Custom Field (ID: %d)\n", f.ID)
-	out += fmt.Sprintf("  Name: %s\n", f.Name)
-	out += fmt.Sprintf("  Data Type: %s\n", f.DataType)
-	out += fmt.Sprintf("  Extra Data: %s\n", extraData)
-	out += fmt.Sprintf("  Document Count: %d\n", f.DocumentCount)
-
-	return out
 }

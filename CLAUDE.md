@@ -32,16 +32,37 @@ paperless-ngx-mcp/
 │   │   ├── server.go          # JSON-RPC server, request routing
 │   │   ├── server_test.go     # Protocol tests
 │   │   └── types.go           # JSON-RPC request/response types
-│   └── tools/                    # MCP tool implementations
-│       ├── tool.go               # Tool interface definition
-│       ├── helpers.go            # Shared utility functions
-│       ├── helpers_test.go       # Helper function tests
-│       ├── get_status.go         # System status tool
-│       ├── get_status_test.go    # Status tool tests
-│       ├── get_config.go         # Application config tool
-│       ├── get_config_test.go    # Config tool tests
-│       ├── update_config.go      # Config update tool
-│       └── update_config_test.go # Config update tests
+│   └── tools/                           # MCP tool implementations
+│       ├── tool.go                      # Tool interface definition
+│       ├── helpers.go                   # Shared utility functions
+│       ├── helpers_test.go              # Helper function tests
+│       ├── formatters.go                # All response formatting functions
+│       ├── get_status.go                # System status tool
+│       ├── get_status_test.go           # Status tool tests
+│       ├── get_config.go                # Application config tool
+│       ├── get_config_test.go           # Config tool tests
+│       ├── update_config.go             # Config update tool
+│       ├── update_config_test.go        # Config update tests
+│       ├── list_correspondents.go       # List correspondents tool
+│       ├── list_correspondents_test.go  # List correspondents tests
+│       ├── get_correspondent.go         # Get correspondent tool
+│       ├── get_correspondent_test.go    # Get correspondent tests
+│       ├── create_correspondent.go      # Create correspondent tool
+│       ├── create_correspondent_test.go # Create correspondent tests
+│       ├── update_correspondent.go      # Update correspondent tool
+│       ├── update_correspondent_test.go # Update correspondent tests
+│       ├── delete_correspondent.go      # Delete correspondent tool
+│       ├── delete_correspondent_test.go # Delete correspondent tests
+│       ├── list_custom_fields.go        # List custom fields tool
+│       ├── list_custom_fields_test.go   # List custom fields tests
+│       ├── get_custom_field.go          # Get custom field tool
+│       ├── get_custom_field_test.go     # Get custom field tests
+│       ├── create_custom_field.go       # Create custom field tool
+│       ├── create_custom_field_test.go  # Create custom field tests
+│       ├── update_custom_field.go       # Update custom field tool
+│       ├── update_custom_field_test.go  # Update custom field tests
+│       ├── delete_custom_field.go       # Delete custom field tool
+│       └── delete_custom_field_test.go  # Delete custom field tests
 ├── Makefile                   # Build automation
 ├── CLAUDE.md                  # This file
 ├── README.md                  # User-facing documentation
@@ -134,9 +155,34 @@ type SystemStatus struct {
 
 Shared utility functions to eliminate code duplication:
 
-**`doAPIRequest(ctx, client, path)`** - Common GET request pattern
-**`doPatchRequest(ctx, client, path, body)`** - Common PATCH request pattern
-**`readResponse(resp)`** - Read and validate HTTP response body
+**HTTP helpers:**
+- **`doAPIRequest(ctx, client, path)`** - Common GET request pattern (expects 200)
+- **`doPostRequest(ctx, client, path, body)`** - Common POST request pattern (expects 201)
+- **`doPatchRequest(ctx, client, path, body)`** - Common PATCH request pattern (expects 200)
+- **`doDeleteRequest(ctx, client, path)`** - Common DELETE request pattern (expects 204)
+- **`readResponse(resp, expectedStatus)`** - Read and validate HTTP response body
+
+**Argument parsing helpers:**
+- **`parseIDArg(args)`** - Parse and validate a required `id` field from JSON args
+- **`parsePatchArgs(args)`** - Extract `id` and build patch body (all fields except `id`)
+
+**Schema helpers:**
+- **`idOnlySchema(desc)`** - JSON schema for tools that only take an `id` parameter
+- **`paginatedListSchema()`** - JSON schema for list tools (page, page_size, name filter)
+
+**List query helpers:**
+- **`buildListPath(basePath, args)`** - Build URL path with query parameters from list args
+
+### Response Formatters (`internal/tools/formatters.go`)
+
+All response formatting functions are centralized here:
+
+- **`formatStatus`** - System status summary
+- **`formatConfig`** - Application configuration grouped by category
+- **`formatCorrespondent`** / **`formatCorrespondentList`** - Correspondent details and lists
+- **`formatCustomField`** / **`formatCustomFieldList`** - Custom field details and lists
+- **`formatOpt[T]`** / **`formatOptJSON`** - Nullable field formatting helpers
+- **`formatDate`** / **`formatTaskLine`** - Date and task line formatting
 
 ## Development Workflow
 
@@ -276,6 +322,7 @@ Every new tool should have:
 - Keep it simple - prefer standard library over dependencies
 - One tool per file
 - Shared logic in helpers.go
+- Response formatting in formatters.go
 - Type definitions in models.go
 
 ## Current Tools
@@ -283,24 +330,88 @@ Every new tool should have:
 ### `get_status` (`internal/tools/get_status.go`)
 
 - **Endpoint**: `GET /api/status/`
-- **Input**: None (no parameters)
-- **Output**: Human-readable formatted status summary
-- **Model**: `models.SystemStatus` — parses version, storage, database, and task statuses
+- **Input**: None
+- **Output**: Formatted status summary
+- **Model**: `models.SystemStatus`
 
 ### `get_config` (`internal/tools/get_config.go`)
 
 - **Endpoint**: `GET /api/config/`
-- **Input**: None (no parameters)
-- **Output**: Human-readable config summary grouped by category (OCR, App, Barcode)
-- **Model**: `models.ApplicationConfiguration` — nullable fields, `json.RawMessage` for JSON fields
+- **Input**: None
+- **Output**: Config summary grouped by category (OCR, App, Barcode)
+- **Model**: `models.ApplicationConfiguration`
 - **Note**: Response is a JSON array; tool takes the first element
 
 ### `update_config` (`internal/tools/update_config.go`)
 
 - **Endpoint**: `PATCH /api/config/{id}/`
-- **Input**: `id` (required, integer) + any config fields as optional parameters
-- **Output**: Human-readable updated config summary (reuses `formatConfig` from get_config)
-- **Note**: Only fields included in the request body are modified; `app_logo` skipped (binary upload)
+- **Input**: `id` (required) + any config fields
+- **Output**: Updated config summary
+- **Note**: Only included fields are modified; `app_logo` skipped (binary upload)
+
+### `list_correspondents` (`internal/tools/list_correspondents.go`)
+
+- **Endpoint**: `GET /api/correspondents/`
+- **Input**: `page`, `page_size`, `name` (all optional)
+- **Output**: Paginated correspondent list
+- **Model**: `models.PaginatedList[models.Correspondent]`
+
+### `get_correspondent` (`internal/tools/get_correspondent.go`)
+
+- **Endpoint**: `GET /api/correspondents/{id}/`
+- **Input**: `id` (required)
+- **Output**: Correspondent details with matching algorithm name
+- **Model**: `models.Correspondent`
+
+### `create_correspondent` (`internal/tools/create_correspondent.go`)
+
+- **Endpoint**: `POST /api/correspondents/`
+- **Input**: `name` (required), `match`, `matching_algorithm`, `is_insensitive` (optional)
+- **Output**: Created correspondent details
+
+### `update_correspondent` (`internal/tools/update_correspondent.go`)
+
+- **Endpoint**: `PATCH /api/correspondents/{id}/`
+- **Input**: `id` (required) + any correspondent fields
+- **Output**: Updated correspondent details
+
+### `delete_correspondent` (`internal/tools/delete_correspondent.go`)
+
+- **Endpoint**: `DELETE /api/correspondents/{id}/`
+- **Input**: `id` (required)
+- **Output**: Confirmation message
+
+### `list_custom_fields` (`internal/tools/list_custom_fields.go`)
+
+- **Endpoint**: `GET /api/custom_fields/`
+- **Input**: `page`, `page_size`, `name` (all optional)
+- **Output**: Paginated custom field list
+- **Model**: `models.PaginatedList[models.CustomField]`
+
+### `get_custom_field` (`internal/tools/get_custom_field.go`)
+
+- **Endpoint**: `GET /api/custom_fields/{id}/`
+- **Input**: `id` (required)
+- **Output**: Custom field details with extra data
+- **Model**: `models.CustomField`
+
+### `create_custom_field` (`internal/tools/create_custom_field.go`)
+
+- **Endpoint**: `POST /api/custom_fields/`
+- **Input**: `name`, `data_type` (required), `extra_data` (optional)
+- **Output**: Created custom field details
+
+### `update_custom_field` (`internal/tools/update_custom_field.go`)
+
+- **Endpoint**: `PATCH /api/custom_fields/{id}/`
+- **Input**: `id` (required) + any custom field fields
+- **Output**: Updated custom field details
+
+### `delete_custom_field` (`internal/tools/delete_custom_field.go`)
+
+- **Endpoint**: `DELETE /api/custom_fields/{id}/`
+- **Input**: `id` (required)
+- **Output**: Confirmation message
 
 ## Configuration
 

@@ -111,13 +111,13 @@ type Correspondent struct {
 	LastCorrespondence *string `json:"last_correspondence"`
 }
 
-// PaginatedCorrespondentList represents a paginated list of correspondents.
-type PaginatedCorrespondentList struct {
-	Count    int             `json:"count"`
-	Next     *string         `json:"next"`
-	Previous *string         `json:"previous"`
-	All      []int           `json:"all"`
-	Results  []Correspondent `json:"results"`
+// PaginatedList is a generic paginated API response.
+type PaginatedList[T any] struct {
+	Count    int     `json:"count"`
+	Next     *string `json:"next"`
+	Previous *string `json:"previous"`
+	All      []int   `json:"all"`
+	Results  []T     `json:"results"`
 }
 
 // CustomField represents a Paperless-NGX custom field definition.
@@ -127,13 +127,4 @@ type CustomField struct {
 	DataType      string          `json:"data_type"`
 	ExtraData     json.RawMessage `json:"extra_data"`
 	DocumentCount int             `json:"document_count"`
-}
-
-// PaginatedCustomFieldList represents a paginated list of custom fields.
-type PaginatedCustomFieldList struct {
-	Count    int           `json:"count"`
-	Next     *string       `json:"next"`
-	Previous *string       `json:"previous"`
-	All      []int         `json:"all"`
-	Results  []CustomField `json:"results"`
 }

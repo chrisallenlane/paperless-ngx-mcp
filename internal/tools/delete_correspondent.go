@@ -27,16 +27,7 @@ func (t *DeleteCorrespondent) Description() string {
 
 // InputSchema returns the JSON schema for the tool's input parameters.
 func (t *DeleteCorrespondent) InputSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"id": map[string]interface{}{
-				"type":        "integer",
-				"description": "Correspondent ID to delete",
-			},
-		},
-		"required": []string{"id"},
-	}
+	return idOnlySchema("Correspondent ID to delete")
 }
 
 // Execute runs the tool and returns a confirmation message.
@@ -44,18 +35,12 @@ func (t *DeleteCorrespondent) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	var params struct {
-		ID int `json:"id"`
-	}
-	if err := json.Unmarshal(args, &params); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
+	id, err := parseIDArg(args)
+	if err != nil {
+		return "", err
 	}
 
-	if params.ID <= 0 {
-		return "", fmt.Errorf("id must be a positive integer")
-	}
-
-	path := fmt.Sprintf("/api/correspondents/%d/", params.ID)
+	path := fmt.Sprintf("/api/correspondents/%d/", id)
 
 	if err := doDeleteRequest(ctx, t.client, path); err != nil {
 		return "", fmt.Errorf(
@@ -66,6 +51,6 @@ func (t *DeleteCorrespondent) Execute(
 
 	return fmt.Sprintf(
 		"Correspondent %d deleted successfully.",
-		params.ID,
+		id,
 	), nil
 }

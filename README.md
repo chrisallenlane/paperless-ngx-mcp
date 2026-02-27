@@ -67,31 +67,61 @@ See `SETUP.md` for integration with Claude Code and Claude Desktop.
 
 ## Available Tools
 
-### `get_status`
+### System
 
-Returns the current system status of the Paperless-NGX server, including:
-- Version, OS, and install type
-- Storage usage
-- Database, Redis, and Celery status
-- Index, classifier, and sanity check status with last-run timestamps
+#### `get_status`
+Returns the current system status of the Paperless-NGX server, including
+version, OS, storage usage, database/Redis/Celery status, and task timestamps.
 
-### `get_config`
+#### `get_config`
+Returns the current application configuration, grouped by category (OCR, App,
+Barcode). Null values display as "(default)".
 
-Returns the current application configuration, grouped by category:
-- OCR settings (output type, language, mode, DPI, etc.)
-- App settings (title, logo)
-- Barcode settings (enabled, DPI, ASN prefix, etc.)
+#### `update_config`
+Updates application configuration via PATCH. Accepts `id` (required) plus any
+config field. Only included fields are modified.
 
-Null values display as "(default)" to indicate server defaults are in use.
+### Correspondents
 
-### `update_config`
+#### `list_correspondents`
+Lists correspondents with optional filtering by name and pagination (page,
+page_size parameters).
 
-Updates application configuration via PATCH request. Accepts:
-- `id` (required) — config ID to update (typically 1)
-- Any config field as an optional parameter
+#### `get_correspondent`
+Gets a single correspondent by ID, including name, match pattern, matching
+algorithm, document count, and last correspondence date.
 
-Only fields included in the request are modified. Returns the updated
-configuration summary.
+#### `create_correspondent`
+Creates a new correspondent. Requires `name`; optionally accepts `match`,
+`matching_algorithm`, and `is_insensitive`.
+
+#### `update_correspondent`
+Updates an existing correspondent via PATCH. Requires `id`; any other
+correspondent field is optional.
+
+#### `delete_correspondent`
+Deletes a correspondent by ID.
+
+### Custom Fields
+
+#### `list_custom_fields`
+Lists custom fields with optional filtering by name and pagination (page,
+page_size parameters).
+
+#### `get_custom_field`
+Gets a single custom field by ID, including name, data type, extra data, and
+document count.
+
+#### `create_custom_field`
+Creates a new custom field. Requires `name` and `data_type`; optionally accepts
+`extra_data`.
+
+#### `update_custom_field`
+Updates an existing custom field via PATCH. Requires `id`; any other field is
+optional.
+
+#### `delete_custom_field`
+Deletes a custom field by ID.
 
 ## Development
 

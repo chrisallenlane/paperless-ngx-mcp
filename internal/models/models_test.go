@@ -401,7 +401,7 @@ func TestCorrespondentUnmarshalNullLastCorrespondence(t *testing.T) {
 	}
 }
 
-func TestPaginatedCorrespondentListUnmarshal(t *testing.T) {
+func TestPaginatedListCorrespondentUnmarshal(t *testing.T) {
 	jsonData := `{
 		"count": 1,
 		"next": null,
@@ -418,7 +418,7 @@ func TestPaginatedCorrespondentListUnmarshal(t *testing.T) {
 		}]
 	}`
 
-	var list PaginatedCorrespondentList
+	var list PaginatedList[Correspondent]
 	if err := json.Unmarshal([]byte(jsonData), &list); err != nil {
 		t.Fatalf("Failed to unmarshal: %v", err)
 	}

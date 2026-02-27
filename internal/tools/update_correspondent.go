@@ -64,30 +64,9 @@ func (t *UpdateCorrespondent) Execute(
 	ctx context.Context,
 	args json.RawMessage,
 ) (string, error) {
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(args, &raw); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
-	}
-
-	idRaw, ok := raw["id"]
-	if !ok {
-		return "", fmt.Errorf("id is required")
-	}
-
-	var id int64
-	if err := json.Unmarshal(idRaw, &id); err != nil {
-		return "", fmt.Errorf("failed to parse id: %w", err)
-	}
-
-	if id <= 0 {
-		return "", fmt.Errorf("id must be a positive integer")
-	}
-
-	patchBody := make(map[string]json.RawMessage)
-	for k, v := range raw {
-		if k != "id" {
-			patchBody[k] = v
-		}
+	id, patchBody, err := parsePatchArgs(args)
+	if err != nil {
+		return "", err
 	}
 
 	path := fmt.Sprintf("/api/correspondents/%d/", id)
