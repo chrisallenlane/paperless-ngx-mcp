@@ -13,13 +13,41 @@ func TestReadResponse_OK(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(`{"id": 1}`)),
 	}
 
-	body, err := readResponse(resp)
+	body, err := readResponse(resp, http.StatusOK)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
 	if string(body) != `{"id": 1}` {
 		t.Errorf("Body = %s, want {\"id\": 1}", string(body))
+	}
+}
+
+func TestReadResponse_Created(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: http.StatusCreated,
+		Body:       io.NopCloser(strings.NewReader(`{"id": 1}`)),
+	}
+
+	body, err := readResponse(resp, http.StatusCreated)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if string(body) != `{"id": 1}` {
+		t.Errorf("Body = %s, want {\"id\": 1}", string(body))
+	}
+}
+
+func TestReadResponse_NoContent(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: http.StatusNoContent,
+		Body:       io.NopCloser(strings.NewReader("")),
+	}
+
+	_, err := readResponse(resp, http.StatusNoContent)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
 	}
 }
 
@@ -31,7 +59,7 @@ func TestReadResponse_Error(t *testing.T) {
 		),
 	}
 
-	_, err := readResponse(resp)
+	_, err := readResponse(resp, http.StatusOK)
 	if err == nil {
 		t.Fatal("Expected error for non-200 response")
 	}
