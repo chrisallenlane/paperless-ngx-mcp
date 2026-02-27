@@ -43,35 +43,47 @@ func NewWithHTTPClient(
 	}
 }
 
-// doRequest performs an HTTP request
+// doRawRequest performs an HTTP request with an arbitrary body
+// reader and content type.
+func (c *Client) doRawRequest(
+	ctx context.Context,
+	method, path string,
+	body io.Reader,
+	contentType string,
+) (*http.Response, error) {
+	url := c.BaseURL + path
+
+	req, err := http.NewRequestWithContext(
+		ctx, method, url, body,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to create request: %w",
+			err,
+		)
+	}
+
+	req.Header.Set("Content-Type", contentType)
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Token "+c.Token)
+	}
+
+	return c.HTTPClient.Do(req)
+}
+
+// doRequest performs an HTTP request with a JSON content type.
 func (c *Client) doRequest(
 	ctx context.Context,
 	method, path string,
 	body []byte,
 ) (*http.Response, error) {
-	url := c.BaseURL + path
-
 	var reqBody io.Reader
 	if body != nil {
 		reqBody = bytes.NewReader(body)
 	}
-
-	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	if c.Token != "" {
-		req.Header.Set("Authorization", "Token "+c.Token)
-	}
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return c.doRawRequest(
+		ctx, method, path, reqBody, "application/json",
+	)
 }
 
 // Get performs a GET request
@@ -116,42 +128,16 @@ func (c *Client) Delete(
 	return c.doRequest(ctx, "DELETE", path, nil)
 }
 
-// PostMultipart performs a POST request with a multipart/form-data body.
-// The body reader should contain the pre-built multipart content, and
-// contentType should include the multipart boundary.
+// PostMultipart performs a POST request with a multipart/form-data
+// body. The body reader should contain the pre-built multipart
+// content, and contentType should include the multipart boundary.
 func (c *Client) PostMultipart(
 	ctx context.Context,
 	path string,
 	body io.Reader,
 	contentType string,
 ) (*http.Response, error) {
-	url := c.BaseURL + path
-
-	req, err := http.NewRequestWithContext(
-		ctx,
-		"POST",
-		url,
-		body,
+	return c.doRawRequest(
+		ctx, "POST", path, body, contentType,
 	)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"failed to create request: %w",
-			err,
-		)
-	}
-
-	req.Header.Set("Content-Type", contentType)
-	if c.Token != "" {
-		req.Header.Set(
-			"Authorization",
-			"Token "+c.Token,
-		)
-	}
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
 }
