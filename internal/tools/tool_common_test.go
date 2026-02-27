@@ -57,6 +57,15 @@ var allToolTests = []toolTestEntry{
 
 	// Get (ID-based) tools
 	{
+		name: "GetSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewGetSavedView(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
 		name: "GetTag",
 		newTool: func(c *client.Client) Tool {
 			return NewGetTag(c)
@@ -161,6 +170,13 @@ var allToolTests = []toolTestEntry{
 		serverArgs: `{}`,
 	},
 	{
+		name: "ListSavedViews",
+		newTool: func(c *client.Client) Tool {
+			return NewListSavedViews(c)
+		},
+		serverArgs: `{}`,
+	},
+	{
 		name: "ListTags",
 		newTool: func(c *client.Client) Tool {
 			return NewListTags(c)
@@ -222,6 +238,19 @@ var allToolTests = []toolTestEntry{
 		required:   []string{"name"},
 	},
 	{
+		name: "CreateSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewCreateSavedView(c)
+		},
+		serverArgs: `{"name": "Test", "show_on_dashboard": true, "show_in_sidebar": false, "filter_rules": []}`,
+		required: []string{
+			"name",
+			"show_on_dashboard",
+			"show_in_sidebar",
+			"filter_rules",
+		},
+	},
+	{
 		name: "CreateTag",
 		newTool: func(c *client.Client) Tool {
 			return NewCreateTag(c)
@@ -263,6 +292,16 @@ var allToolTests = []toolTestEntry{
 		name: "UpdateDocumentType",
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateDocumentType(c)
+		},
+		serverArgs:    `{"id": 1, "name": "Test"}`,
+		idArgsFmt:     `{"id": %d}`,
+		missingIDArgs: `{"name": "Test"}`,
+		required:      []string{"id"},
+	},
+	{
+		name: "UpdateSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateSavedView(c)
 		},
 		serverArgs:    `{"id": 1, "name": "Test"}`,
 		idArgsFmt:     `{"id": %d}`,
@@ -333,6 +372,15 @@ var allToolTests = []toolTestEntry{
 		name: "DeleteDocumentType",
 		newTool: func(c *client.Client) Tool {
 			return NewDeleteDocumentType(c)
+		},
+		serverArgs: `{"id": 1}`,
+		idArgsFmt:  `{"id": %d}`,
+		required:   []string{"id"},
+	},
+	{
+		name: "DeleteSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewDeleteSavedView(c)
 		},
 		serverArgs: `{"id": 1}`,
 		idArgsFmt:  `{"id": %d}`,
@@ -807,6 +855,55 @@ const documentTypeListResponse = `{
 
 // GET happy-path table tests.
 
+const savedViewResponse = `{
+	"id": 1,
+	"name": "Unpaid Invoices",
+	"show_on_dashboard": true,
+	"show_in_sidebar": true,
+	"sort_field": "created",
+	"sort_reverse": true,
+	"filter_rules": [
+		{"rule_type": 4, "value": "3"},
+		{"rule_type": 6, "value": "7"}
+	],
+	"page_size": 50,
+	"display_mode": "table"
+}`
+
+const savedViewListResponse = `{
+	"count": 2,
+	"next": null,
+	"previous": null,
+	"all": [1, 2],
+	"results": [
+		{
+			"id": 1,
+			"name": "Unpaid Invoices",
+			"show_on_dashboard": true,
+			"show_in_sidebar": true,
+			"sort_field": "created",
+			"sort_reverse": true,
+			"filter_rules": [
+				{"rule_type": 4, "value": "3"},
+				{"rule_type": 6, "value": "7"}
+			],
+			"page_size": 50,
+			"display_mode": "table"
+		},
+		{
+			"id": 2,
+			"name": "Recent Documents",
+			"show_on_dashboard": false,
+			"show_in_sidebar": true,
+			"sort_field": "added",
+			"sort_reverse": true,
+			"filter_rules": [],
+			"page_size": null,
+			"display_mode": null
+		}
+	]
+}`
+
 const tagResponse = `{
 	"id": 1,
 	"slug": "important",
@@ -921,6 +1018,27 @@ var getToolTests = []struct {
 	responseJSON string
 	checks       []string
 }{
+	{
+		name: "GetSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewGetSavedView(c)
+		},
+		path:         "/api/saved_views/1/",
+		args:         `{"id": 1}`,
+		responseJSON: savedViewResponse,
+		checks: []string{
+			"Saved View (ID: 1)",
+			"Name: Unpaid Invoices",
+			"Show on Dashboard: true",
+			"Show in Sidebar: true",
+			"Sort Field: created",
+			"Sort Reverse: true",
+			"Page Size: 50",
+			"Display Mode: table",
+			"Document type is: 3",
+			"Has tag: 7",
+		},
+	},
 	{
 		name: "GetTag",
 		newTool: func(c *client.Client) Tool {
@@ -1228,6 +1346,26 @@ var listToolTests = []struct {
 		nameFilterCheck: "Invoice",
 	},
 	{
+		name: "ListSavedViews",
+		newTool: func(c *client.Client) Tool {
+			return NewListSavedViews(c)
+		},
+		path:         "/api/saved_views/",
+		responseJSON: savedViewListResponse,
+		checks: []string{
+			"Saved Views: 2 total",
+			"Unpaid Invoices (ID: 1)",
+			"2 filter rules",
+			"[dashboard]",
+			"[sidebar]",
+			"Recent Documents (ID: 2)",
+			"0 filter rules",
+		},
+		emptyMessage:    "No saved views found.",
+		nameFilterName:  "",
+		nameFilterCheck: "",
+	},
+	{
 		name: "ListTags",
 		newTool: func(c *client.Client) Tool {
 			return NewListTags(c)
@@ -1524,6 +1662,31 @@ var updateToolTests = []struct {
 		checks: []string{
 			"Document Type (ID: 1)",
 			"Name: Updated Type",
+		},
+	},
+	{
+		name: "UpdateSavedView",
+		newTool: func(c *client.Client) Tool {
+			return NewUpdateSavedView(c)
+		},
+		path:       "/api/saved_views/1/",
+		args:       `{"id": 1, "name": "Updated View"}`,
+		fieldName:  "name",
+		fieldValue: "Updated View",
+		responseJSON: `{
+			"id": 1,
+			"name": "Updated View",
+			"show_on_dashboard": true,
+			"show_in_sidebar": false,
+			"sort_field": "created",
+			"sort_reverse": true,
+			"filter_rules": [],
+			"page_size": null,
+			"display_mode": null
+		}`,
+		checks: []string{
+			"Saved View (ID: 1)",
+			"Name: Updated View",
 		},
 	},
 	{

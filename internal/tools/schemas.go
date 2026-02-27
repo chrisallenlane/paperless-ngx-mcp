@@ -484,3 +484,107 @@ func configUpdateSchema() map[string]interface{} {
 		"required": []string{"id"},
 	}
 }
+
+// savedViewProps returns the shared property definitions for
+// saved view schemas.
+func savedViewProps() map[string]interface{} {
+	return map[string]interface{}{
+		"name": map[string]interface{}{
+			"type":        "string",
+			"description": "Saved view name",
+		},
+		"show_on_dashboard": map[string]interface{}{
+			"type": "boolean",
+			"description": "Show this view " +
+				"on the dashboard",
+		},
+		"show_in_sidebar": map[string]interface{}{
+			"type": "boolean",
+			"description": "Show this view " +
+				"in the sidebar",
+		},
+		"sort_field": map[string]interface{}{
+			"type": "string",
+			"description": "Field to sort by " +
+				"(e.g., created, added, title)",
+		},
+		"sort_reverse": map[string]interface{}{
+			"type": "boolean",
+			"description": "Reverse sort order " +
+				"(default false)",
+		},
+		"filter_rules": map[string]interface{}{
+			"type": "array",
+			"items": map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"rule_type": map[string]interface{}{
+						"type": "integer",
+						"description": "Filter rule type: " +
+							"0=title contains, " +
+							"1=content contains, " +
+							"3=correspondent is, " +
+							"4=document type is, " +
+							"5=is in inbox, " +
+							"6=has tag, " +
+							"17=does not have tag, " +
+							"20=fulltext query, " +
+							"25=storage path is " +
+							"(additional types 0-47 exist)",
+					},
+					"value": map[string]interface{}{
+						"type": "string",
+						"description": "Filter value " +
+							"(IDs as strings, " +
+							"or search text)",
+					},
+				},
+				"required": []string{
+					"rule_type",
+				},
+			},
+			"description": "Filter rules for " +
+				"this saved view",
+		},
+		"page_size": map[string]interface{}{
+			"type":        "integer",
+			"description": "Results per page",
+		},
+		"display_mode": map[string]interface{}{
+			"type": "string",
+			"description": "Display mode: table, " +
+				"smallCards, largeCards",
+		},
+	}
+}
+
+// savedViewCreateSchema returns an input schema for creating
+// a saved view.
+func savedViewCreateSchema() map[string]interface{} {
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": savedViewProps(),
+		"required": []string{
+			"name",
+			"show_on_dashboard",
+			"show_in_sidebar",
+			"filter_rules",
+		},
+	}
+}
+
+// savedViewUpdateSchema returns an input schema for updating
+// a saved view.
+func savedViewUpdateSchema() map[string]interface{} {
+	props := savedViewProps()
+	props["id"] = map[string]interface{}{
+		"type":        "integer",
+		"description": "Saved view ID to update",
+	}
+
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": props,
+		"required":   []string{"id"},
+	}
+}

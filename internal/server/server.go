@@ -148,6 +148,21 @@ func (s *Server) registerTools() {
 	s.tools["delete_storage_path"] = tools.NewDeleteStoragePath(
 		s.client,
 	)
+	s.tools["list_saved_views"] = tools.NewListSavedViews(
+		s.client,
+	)
+	s.tools["get_saved_view"] = tools.NewGetSavedView(
+		s.client,
+	)
+	s.tools["create_saved_view"] = tools.NewCreateSavedView(
+		s.client,
+	)
+	s.tools["update_saved_view"] = tools.NewUpdateSavedView(
+		s.client,
+	)
+	s.tools["delete_saved_view"] = tools.NewDeleteSavedView(
+		s.client,
+	)
 	s.tools["list_document_notes"] = tools.NewListDocumentNotes(
 		s.client,
 	)
