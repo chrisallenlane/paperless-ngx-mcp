@@ -487,6 +487,18 @@ func TestHandleCallTool_Success(t *testing.T) {
 		t.Fatal("content should contain at least one item")
 	}
 
+	// Verify MCP-required "type": "text" field in content item
+	contentType, ok := content[0]["type"].(string)
+	if !ok {
+		t.Fatal("content[0].type should be a string")
+	}
+	if contentType != "text" {
+		t.Errorf(
+			"content[0].type = %q, want \"text\"",
+			contentType,
+		)
+	}
+
 	text, ok := content[0]["text"].(string)
 	if !ok {
 		t.Fatal("content[0].text should be a string")

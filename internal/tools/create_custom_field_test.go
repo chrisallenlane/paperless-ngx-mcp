@@ -176,6 +176,69 @@ func TestCreateCustomField_Execute_WithExtraData(t *testing.T) {
 	}
 }
 
+func TestCreateCustomField_Execute_NullExtraData(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Fatalf("Failed to read body: %v", err)
+				}
+
+				var req map[string]interface{}
+				if err := json.Unmarshal(
+					body,
+					&req,
+				); err != nil {
+					t.Fatalf("Failed to parse body: %v", err)
+				}
+
+				if _, exists := req["extra_data"]; exists {
+					t.Error(
+						"extra_data should be omitted " +
+							"when input is null",
+					)
+				}
+
+				w.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+				w.WriteHeader(http.StatusCreated)
+				w.Write([]byte(`{
+					"id": 2,
+					"name": "Due Date",
+					"data_type": "date",
+					"extra_data": null,
+					"document_count": 0
+				}`))
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewCreateCustomField(c)
+
+	args := `{
+		"name": "Due Date",
+		"data_type": "date",
+		"extra_data": null
+	}`
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(args),
+	)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+}
+
 func TestCreateCustomField_Execute_MissingName(t *testing.T) {
 	c := client.New("http://localhost", "test-token")
 	tool := NewCreateCustomField(c)

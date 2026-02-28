@@ -117,9 +117,19 @@ func TestFormatFileSize(t *testing.T) {
 			want:  "512 bytes",
 		},
 		{
+			name:  "exactly 1 KB boundary",
+			bytes: 1024,
+			want:  "1.00 KB",
+		},
+		{
 			name:  "kilobytes",
 			bytes: 2 * 1024,
 			want:  "2.00 KB",
+		},
+		{
+			name:  "exactly 1 MB boundary",
+			bytes: 1024 * 1024,
+			want:  "1.00 MB",
 		},
 		{
 			name:  "megabytes",
@@ -127,9 +137,19 @@ func TestFormatFileSize(t *testing.T) {
 			want:  "3.00 MB",
 		},
 		{
+			name:  "exactly 1 GB boundary",
+			bytes: 1024 * 1024 * 1024,
+			want:  "1.00 GB",
+		},
+		{
 			name:  "5 GB",
 			bytes: 5 * 1024 * 1024 * 1024,
 			want:  "5.00 GB",
+		},
+		{
+			name:  "exactly 1 TB boundary",
+			bytes: 1024 * 1024 * 1024 * 1024,
+			want:  "1.00 TB",
 		},
 		{
 			name:  "2 TB",
@@ -145,6 +165,49 @@ func TestFormatFileSize(t *testing.T) {
 				t.Errorf(
 					"formatFileSize(%d) = %q, want %q",
 					tt.bytes,
+					got,
+					tt.want,
+				)
+			}
+		})
+	}
+}
+
+func TestFormatOptJSON(t *testing.T) {
+	tests := []struct {
+		name  string
+		label string
+		v     json.RawMessage
+		want  string
+	}{
+		{
+			name:  "nil value returns default",
+			label: "Extra",
+			v:     nil,
+			want:  "Extra: (default)\n",
+		},
+		{
+			name:  "null JSON returns default",
+			label: "Extra",
+			v:     json.RawMessage(`null`),
+			want:  "Extra: (default)\n",
+		},
+		{
+			name:  "non-null JSON returns value",
+			label: "Extra",
+			v:     json.RawMessage(`{"key":"val"}`),
+			want:  "Extra: {\"key\":\"val\"}\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := formatOptJSON(tt.label, tt.v)
+			if got != tt.want {
+				t.Errorf(
+					"formatOptJSON(%q, %v) = %q, want %q",
+					tt.label,
+					tt.v,
 					got,
 					tt.want,
 				)
@@ -434,6 +497,24 @@ func TestFormatDocument_ContentTruncation(t *testing.T) {
 		t.Errorf(
 			"formatDocument truncated content does not match "+
 				"expected snippet, got:\n%s",
+			got,
+		)
+	}
+}
+
+func TestFormatDocument_EmptyContent(t *testing.T) {
+	doc := &models.Document{
+		ID:      1,
+		Title:   "Empty Doc",
+		Content: "",
+	}
+
+	got := formatDocument(doc)
+
+	if strings.Contains(got, "Content:") {
+		t.Errorf(
+			"formatDocument with empty content should "+
+				"not contain 'Content:', got:\n%s",
 			got,
 		)
 	}
