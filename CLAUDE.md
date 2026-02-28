@@ -89,7 +89,12 @@ paperless-ngx-mcp/
 │       ├── list_document_types_test.go  # List document types tests
 │       ├── list_trash_test.go           # List trash tests
 │       ├── update_config_test.go        # Config update tests
-│       └── update_document_test.go      # Update document tests
+│       ├── update_document_test.go      # Update document tests
+│       ├── helpers_fuzz_test.go         # Fuzz tests: validateFilePath, parseIDArg, parsePatchArgs, buildListPath
+│       ├── list_documents_fuzz_test.go  # Fuzz tests: buildDocumentListPath
+│       ├── list_tasks_fuzz_test.go      # Fuzz tests: buildTaskListPath
+│       ├── create_fuzz_test.go          # Fuzz tests: validate* create functions
+│       └── format_fuzz_test.go          # Fuzz tests: formatDate, formatFileSize, formatStatistics
 ├── Makefile                   # Build automation
 ├── CLAUDE.md                  # This file
 ├── README.md                  # User-facing documentation
@@ -299,6 +304,7 @@ make vet       # Run vet
 make test      # Run tests
 make coverage  # Tests with coverage report
 make check     # All checks (format, lint, vet, test)
+make fuzz      # Run fuzz tests (FUZZTIME=30s by default)
 ```
 
 ### Installing
