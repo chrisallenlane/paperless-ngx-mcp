@@ -100,8 +100,8 @@ func (t *CreateDocumentNote) Execute(
 		)
 	}
 
-	var list models.PaginatedList[models.Note]
-	if err := json.Unmarshal(body, &list); err != nil {
+	var notes []models.Note
+	if err := json.Unmarshal(body, &notes); err != nil {
 		return "", fmt.Errorf(
 			"failed to parse response: %w",
 			err,
@@ -111,6 +111,6 @@ func (t *CreateDocumentNote) Execute(
 	return fmt.Sprintf(
 		"Note added to document %d.\n\n%s",
 		params.ID,
-		formatNoteList(params.ID, &list),
+		formatNoteList(params.ID, notes),
 	), nil
 }

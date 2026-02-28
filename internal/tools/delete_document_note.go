@@ -104,8 +104,8 @@ func (t *DeleteDocumentNote) Execute(
 		)
 	}
 
-	var list models.PaginatedList[models.Note]
-	if err := json.Unmarshal(body, &list); err != nil {
+	var notes []models.Note
+	if err := json.Unmarshal(body, &notes); err != nil {
 		return "", fmt.Errorf(
 			"failed to parse response: %w",
 			err,
@@ -116,6 +116,6 @@ func (t *DeleteDocumentNote) Execute(
 		"Note %d deleted from document %d.\n\n%s",
 		params.NoteID,
 		params.DocumentID,
-		formatNoteList(params.DocumentID, &list),
+		formatNoteList(params.DocumentID, notes),
 	), nil
 }

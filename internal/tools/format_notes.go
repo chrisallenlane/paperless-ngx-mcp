@@ -8,9 +8,9 @@ import (
 
 func formatNoteList(
 	docID int,
-	list *models.PaginatedList[models.Note],
+	notes []models.Note,
 ) string {
-	if list.Count == 0 {
+	if len(notes) == 0 {
 		return fmt.Sprintf(
 			"No notes found for document %d.",
 			docID,
@@ -20,10 +20,10 @@ func formatNoteList(
 	out := fmt.Sprintf(
 		"Notes for Document %d: %d total\n\n",
 		docID,
-		list.Count,
+		len(notes),
 	)
 
-	for _, note := range list.Results {
+	for _, note := range notes {
 		out += fmt.Sprintf(
 			"--- Note %d (by %s on %s) ---\n%s\n\n",
 			note.ID,
@@ -31,11 +31,6 @@ func formatNoteList(
 			formatDate(note.Created),
 			note.Note,
 		)
-	}
-
-	if list.Next != nil {
-		out += "(More notes available — " +
-			"use page parameter)\n"
 	}
 
 	return out

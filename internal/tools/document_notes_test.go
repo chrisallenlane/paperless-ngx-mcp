@@ -12,44 +12,32 @@ import (
 	"github.com/chrisallenlane/paperless-ngx-mcp/internal/client"
 )
 
-const noteListResponse = `{
-	"count": 2,
-	"next": null,
-	"previous": null,
-	"all": [1, 2],
-	"results": [
-		{
+const noteListResponse = `[
+	{
+		"id": 1,
+		"note": "Payment received",
+		"created": "2026-02-15T10:30:00Z",
+		"user": {
 			"id": 1,
-			"note": "Payment received",
-			"created": "2026-02-15T10:30:00Z",
-			"user": {
-				"id": 1,
-				"username": "admin",
-				"first_name": "Admin",
-				"last_name": "User"
-			}
-		},
-		{
-			"id": 2,
-			"note": "Forwarded to accounting",
-			"created": "2026-02-16T14:00:00Z",
-			"user": {
-				"id": 2,
-				"username": "jane",
-				"first_name": "Jane",
-				"last_name": "Doe"
-			}
+			"username": "admin",
+			"first_name": "Admin",
+			"last_name": "User"
 		}
-	]
-}`
+	},
+	{
+		"id": 2,
+		"note": "Forwarded to accounting",
+		"created": "2026-02-16T14:00:00Z",
+		"user": {
+			"id": 2,
+			"username": "jane",
+			"first_name": "Jane",
+			"last_name": "Doe"
+		}
+	}
+]`
 
-const emptyNoteListResponse = `{
-	"count": 0,
-	"next": null,
-	"previous": null,
-	"all": [],
-	"results": []
-}`
+const emptyNoteListResponse = `[]`
 
 // --- ListDocumentNotes tests ---
 
@@ -181,56 +169,6 @@ func TestListDocumentNotes_InvalidID(t *testing.T) {
 			"Error should mention positive integer, got: %s",
 			err.Error(),
 		)
-	}
-}
-
-func TestListDocumentNotes_Pagination(t *testing.T) {
-	server := httptest.NewServer(
-		http.HandlerFunc(
-			func(
-				w http.ResponseWriter,
-				r *http.Request,
-			) {
-				q := r.URL.Query()
-				if got := q.Get("page"); got != "2" {
-					t.Errorf(
-						"Expected page=2, got %s",
-						got,
-					)
-				}
-				if got := q.Get("page_size"); got != "5" {
-					t.Errorf(
-						"Expected page_size=5, got %s",
-						got,
-					)
-				}
-
-				w.Header().Set(
-					"Content-Type",
-					"application/json",
-				)
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(emptyNoteListResponse))
-			},
-		),
-	)
-	defer server.Close()
-
-	c := client.NewWithHTTPClient(
-		server.URL,
-		"test-token",
-		server.Client(),
-	)
-	tool := NewListDocumentNotes(c)
-
-	_, err := tool.Execute(
-		context.Background(),
-		json.RawMessage(
-			`{"id": 42, "page": 2, "page_size": 5}`,
-		),
-	)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
 	}
 }
 

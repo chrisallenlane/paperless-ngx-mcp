@@ -153,58 +153,42 @@ func TestFormatFileSize(t *testing.T) {
 	}
 }
 
-func TestFormatNoteList_Pagination(t *testing.T) {
-	nextURL := "http://example.com/api/documents/1/notes/?page=2"
-	list := &models.PaginatedList[models.Note]{
-		Count: 2,
-		Next:  &nextURL,
-		Results: []models.Note{
-			{
-				ID:      1,
-				Note:    "First note",
-				Created: "2024-01-15T00:00:00Z",
-				User: models.BasicUser{
-					ID:       1,
-					Username: "alice",
-				},
-			},
-		},
-	}
-
-	got := formatNoteList(1, list)
-
-	if !strings.Contains(got, "More notes available") {
+func TestFormatNoteList_Empty(t *testing.T) {
+	got := formatNoteList(1, []models.Note{})
+	expected := "No notes found for document 1."
+	if got != expected {
 		t.Errorf(
-			"formatNoteList with Next set should contain "+
-				"pagination hint, got:\n%s",
+			"formatNoteList(empty) = %q, want %q",
 			got,
+			expected,
 		)
 	}
 }
 
-func TestFormatNoteList_NoNextNoHint(t *testing.T) {
-	list := &models.PaginatedList[models.Note]{
-		Count: 1,
-		Next:  nil,
-		Results: []models.Note{
-			{
-				ID:      1,
-				Note:    "Only note",
-				Created: "2024-01-15T00:00:00Z",
-				User: models.BasicUser{
-					ID:       1,
-					Username: "alice",
-				},
+func TestFormatNoteList_WithNotes(t *testing.T) {
+	notes := []models.Note{
+		{
+			ID:      1,
+			Note:    "Only note",
+			Created: "2024-01-15T00:00:00Z",
+			User: models.BasicUser{
+				ID:       1,
+				Username: "alice",
 			},
 		},
 	}
 
-	got := formatNoteList(1, list)
+	got := formatNoteList(1, notes)
 
-	if strings.Contains(got, "More notes available") {
+	if !strings.Contains(got, "1 total") {
 		t.Errorf(
-			"formatNoteList without Next should not contain "+
-				"pagination hint, got:\n%s",
+			"formatNoteList should contain count, got:\n%s",
+			got,
+		)
+	}
+	if !strings.Contains(got, "Only note") {
+		t.Errorf(
+			"formatNoteList should contain note text, got:\n%s",
 			got,
 		)
 	}

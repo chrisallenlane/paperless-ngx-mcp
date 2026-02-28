@@ -53,6 +53,9 @@ func formatStatLabel(key string) string {
 }
 
 func formatStatValue(v interface{}) string {
+	if v == nil {
+		return "(none)"
+	}
 	if f, ok := v.(float64); ok {
 		if f == float64(int64(f)) {
 			return fmt.Sprintf("%d", int64(f))
