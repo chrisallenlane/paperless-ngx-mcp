@@ -10,7 +10,7 @@ tools for querying and managing a Paperless-NGX document management system
 through Claude and other AI assistants.
 
 **Tech Stack:**
-- **Language**: Go 1.21+
+- **Language**: Go 1.24+
 - **Protocol**: MCP (Model Context Protocol) via JSON-RPC 2.0 over stdio
 - **Dependencies**: Minimal - Go stdlib only for production code
 

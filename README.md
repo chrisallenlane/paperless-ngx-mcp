@@ -6,7 +6,7 @@ management system.
 
 ## Requirements
 
-- Go 1.21+ (to build from source)
+- Go 1.24+ (to build from source)
 - A running Paperless-NGX instance
 - A Paperless-NGX API token ([how to get one][pngx-api-token])
 
@@ -85,7 +85,7 @@ The server provides 49 tools across the following areas:
 
 | Area | Operations |
 |------|------------|
-| **Documents** | Search, view, create, update, delete, upload, download, metadata, AI suggestions, next ASN |
+| **Documents** | Search, view, update, delete, upload, download, metadata, AI suggestions, next ASN |
 | **Correspondents** | List, view, create, update, delete |
 | **Document Types** | List, view, create, update, delete |
 | **Tags** | List, view, create, update, delete |
