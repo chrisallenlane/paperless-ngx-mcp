@@ -93,12 +93,23 @@ paperless-ngx-mcp/
 │       ├── helpers_fuzz_test.go         # Fuzz tests: validateFilePath, parseIDArg, parsePatchArgs, buildListPath
 │       ├── list_documents_fuzz_test.go  # Fuzz tests: buildDocumentListPath
 │       ├── list_tasks_fuzz_test.go      # Fuzz tests: buildTaskListPath
+│       ├── coverage_edge_cases_test.go  # Edge-case coverage tests
 │       ├── create_fuzz_test.go          # Fuzz tests: validate* create functions
 │       └── format_fuzz_test.go          # Fuzz tests: formatDate, formatFileSize, formatStatistics
+├── tools/
+│   └── tools.go               # Dev tool version pins (build tag: tools)
+├── scripts/
+│   └── fuzz.sh                # Fuzz test runner script
+├── adr/
+│   └── 001-config-api-scope.md # ADR: API endpoint scope decisions
 ├── Makefile                   # Build automation
 ├── CLAUDE.md                  # This file
+├── CHANGELOG.md               # Release changelog
+├── LICENSE                    # MIT license
 ├── README.md                  # User-facing documentation
-└── SETUP.md                   # Setup instructions
+├── SETUP.md                   # Setup instructions
+├── go.mod                     # Go module definition
+└── go.sum                     # Go dependency checksums
 ```
 
 This follows the **standard Go project layout**:
