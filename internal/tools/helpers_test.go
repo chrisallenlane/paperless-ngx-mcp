@@ -107,3 +107,218 @@ func TestBuildListPath_NoParams(t *testing.T) {
 		t.Errorf("Path = %s, want /api/test/", path)
 	}
 }
+
+func TestValidateFilePath(t *testing.T) {
+	tests := []struct {
+		name    string
+		path    string
+		wantErr bool
+	}{
+		{
+			name:    "absolute path",
+			path:    "/home/user/documents/file.pdf",
+			wantErr: false,
+		},
+		{
+			name:    "absolute path at root",
+			path:    "/file.pdf",
+			wantErr: false,
+		},
+		{
+			name:    "relative path",
+			path:    "relative/path/file.pdf",
+			wantErr: true,
+		},
+		{
+			name:    "relative path with dot prefix",
+			path:    "./file.pdf",
+			wantErr: true,
+		},
+		{
+			name:    "path with traversal sequences",
+			path:    "/foo/../../../../etc/passwd",
+			wantErr: true,
+		},
+		{
+			name:    "path with embedded traversal",
+			path:    "/safe/../../../etc/passwd",
+			wantErr: true,
+		},
+		{
+			name:    "empty string",
+			path:    "",
+			wantErr: true,
+		},
+		{
+			name:    "bare double-dot",
+			path:    "..",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateFilePath(tt.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf(
+					"validateFilePath(%q) error = %v, wantErr %v",
+					tt.path,
+					err,
+					tt.wantErr,
+				)
+			}
+		})
+	}
+}
+
+func TestParseIDArg(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    json.RawMessage
+		wantID  int
+		wantErr bool
+	}{
+		{
+			name:    "valid positive integer",
+			args:    json.RawMessage(`{"id": 42}`),
+			wantID:  42,
+			wantErr: false,
+		},
+		{
+			name:    "id of 1",
+			args:    json.RawMessage(`{"id": 1}`),
+			wantID:  1,
+			wantErr: false,
+		},
+		{
+			name:    "zero returns error",
+			args:    json.RawMessage(`{"id": 0}`),
+			wantErr: true,
+		},
+		{
+			name:    "negative integer returns error",
+			args:    json.RawMessage(`{"id": -5}`),
+			wantErr: true,
+		},
+		{
+			name:    "non-integer value returns error",
+			args:    json.RawMessage(`{"id": "abc"}`),
+			wantErr: true,
+		},
+		{
+			name:    "missing id field returns error",
+			args:    json.RawMessage(`{}`),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotID, err := parseIDArg(tt.args)
+			if (err != nil) != tt.wantErr {
+				t.Errorf(
+					"parseIDArg(%s) error = %v, wantErr %v",
+					tt.args,
+					err,
+					tt.wantErr,
+				)
+			}
+			if !tt.wantErr && gotID != tt.wantID {
+				t.Errorf(
+					"parseIDArg(%s) = %d, want %d",
+					tt.args,
+					gotID,
+					tt.wantID,
+				)
+			}
+		})
+	}
+}
+
+func TestParsePatchArgs(t *testing.T) {
+	tests := []struct {
+		name         string
+		args         json.RawMessage
+		wantID       int
+		wantBodyKeys []string
+		wantIDInBody bool
+		wantErr      bool
+	}{
+		{
+			name: "id and extra fields",
+			args: json.RawMessage(
+				`{"id": 7, "name": "foo", "color": "#fff"}`,
+			),
+			wantID:       7,
+			wantBodyKeys: []string{"name", "color"},
+			wantErr:      false,
+		},
+		{
+			name:    "id only produces empty patch body",
+			args:    json.RawMessage(`{"id": 3}`),
+			wantID:  3,
+			wantErr: false,
+		},
+		{
+			name:    "missing id returns error",
+			args:    json.RawMessage(`{"name": "foo"}`),
+			wantErr: true,
+		},
+		{
+			name:    "zero id returns error",
+			args:    json.RawMessage(`{"id": 0, "name": "foo"}`),
+			wantErr: true,
+		},
+		{
+			name:    "negative id returns error",
+			args:    json.RawMessage(`{"id": -1, "name": "foo"}`),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotID, gotBody, err := parsePatchArgs(tt.args)
+			if (err != nil) != tt.wantErr {
+				t.Errorf(
+					"parsePatchArgs(%s) error = %v, wantErr %v",
+					tt.args,
+					err,
+					tt.wantErr,
+				)
+				return
+			}
+
+			if tt.wantErr {
+				return
+			}
+
+			if gotID != tt.wantID {
+				t.Errorf(
+					"parsePatchArgs(%s) id = %d, want %d",
+					tt.args,
+					gotID,
+					tt.wantID,
+				)
+			}
+
+			// id must never appear in the patch body
+			if _, ok := gotBody["id"]; ok {
+				t.Errorf(
+					"parsePatchArgs(%s) patch body must not contain 'id'",
+					tt.args,
+				)
+			}
+
+			for _, key := range tt.wantBodyKeys {
+				if _, ok := gotBody[key]; !ok {
+					t.Errorf(
+						"parsePatchArgs(%s) patch body missing key %q",
+						tt.args,
+						key,
+					)
+				}
+			}
+		})
+	}
+}

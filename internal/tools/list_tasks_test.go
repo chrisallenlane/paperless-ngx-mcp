@@ -148,6 +148,132 @@ func TestListTasks_StatusFilter(t *testing.T) {
 	}
 }
 
+func TestListTasks_TaskNameFilter(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(
+				w http.ResponseWriter,
+				r *http.Request,
+			) {
+				got := r.URL.Query().Get("task_name")
+				if got != "consume_file" {
+					t.Errorf(
+						"Expected task_name=consume_file, got %s",
+						got,
+					)
+				}
+
+				w.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`[]`))
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewListTasks(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(`{"task_name": "consume_file"}`),
+	)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+}
+
+func TestListTasks_TypeFilter(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(
+				w http.ResponseWriter,
+				r *http.Request,
+			) {
+				got := r.URL.Query().Get("type")
+				if got != "auto_task" {
+					t.Errorf(
+						"Expected type=auto_task, got %s",
+						got,
+					)
+				}
+
+				w.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`[]`))
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewListTasks(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(`{"type": "auto_task"}`),
+	)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+}
+
+func TestListTasks_TaskIDFilter(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(
+				w http.ResponseWriter,
+				r *http.Request,
+			) {
+				got := r.URL.Query().Get("task_id")
+				if got != "abc-123" {
+					t.Errorf(
+						"Expected task_id=abc-123, got %s",
+						got,
+					)
+				}
+
+				w.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`[]`))
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewListTasks(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(`{"task_id": "abc-123"}`),
+	)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+}
+
 func TestListTasks_Empty(t *testing.T) {
 	server := httptest.NewServer(
 		http.HandlerFunc(

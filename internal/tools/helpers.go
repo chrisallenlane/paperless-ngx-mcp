@@ -298,18 +298,26 @@ func appendQuery(
 }
 
 // validateFilePath checks that a file path is safe and absolute.
+// It rejects paths that contain ".." components before cleaning, since
+// filepath.Clean resolves traversal sequences rather than preserving them.
 func validateFilePath(path string) error {
+	// Check for ".." components in the raw path before cleaning.
+	// filepath.Clean eliminates ".." by resolving it, so checking the
+	// cleaned path is ineffective — /foo/../../../../etc/passwd cleans to
+	// /etc/passwd with no ".." remaining.
+	for _, part := range strings.Split(path, string(filepath.Separator)) {
+		if part == ".." {
+			return fmt.Errorf(
+				"file path must not contain '..': %s",
+				path,
+			)
+		}
+	}
+
 	cleaned := filepath.Clean(path)
 	if !filepath.IsAbs(cleaned) {
 		return fmt.Errorf(
 			"file path must be absolute: %s",
-			path,
-		)
-	}
-
-	if strings.Contains(cleaned, "..") {
-		return fmt.Errorf(
-			"file path must not contain '..': %s",
 			path,
 		)
 	}

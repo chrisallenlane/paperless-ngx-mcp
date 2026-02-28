@@ -49,6 +49,30 @@ func TestDelete_Execute(t *testing.T) {
 			},
 			expected: "Document 1 deleted successfully.",
 		},
+		{
+			name: "Tag",
+			path: "/api/tags/1/",
+			newTool: func(c *client.Client) Tool {
+				return NewDeleteTag(c)
+			},
+			expected: "Tag 1 deleted successfully.",
+		},
+		{
+			name: "StoragePath",
+			path: "/api/storage_paths/1/",
+			newTool: func(c *client.Client) Tool {
+				return NewDeleteStoragePath(c)
+			},
+			expected: "Storage path 1 deleted successfully.",
+		},
+		{
+			name: "SavedView",
+			path: "/api/saved_views/1/",
+			newTool: func(c *client.Client) Tool {
+				return NewDeleteSavedView(c)
+			},
+			expected: "Saved view 1 deleted successfully.",
+		},
 	}
 
 	for _, tt := range tests {

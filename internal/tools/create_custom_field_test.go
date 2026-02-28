@@ -176,6 +176,26 @@ func TestCreateCustomField_Execute_WithExtraData(t *testing.T) {
 	}
 }
 
+func TestCreateCustomField_Execute_MissingName(t *testing.T) {
+	c := client.New("http://localhost", "test-token")
+	tool := NewCreateCustomField(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(`{"data_type": "string"}`),
+	)
+	if err == nil {
+		t.Fatal("Expected error for missing name")
+	}
+
+	if !strings.Contains(err.Error(), "name is required") {
+		t.Errorf(
+			"Error should mention name is required, got: %s",
+			err.Error(),
+		)
+	}
+}
+
 func TestCreateCustomField_Execute_MissingDataType(t *testing.T) {
 	c := client.New("http://localhost", "test-token")
 	tool := NewCreateCustomField(c)

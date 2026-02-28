@@ -122,7 +122,7 @@ func TestDownloadDocument_Execute_Original(t *testing.T) {
 	)
 	tool := NewDownloadDocument(c)
 
-	_, err := tool.Execute(
+	result, err := tool.Execute(
 		context.Background(),
 		json.RawMessage(fmt.Sprintf(
 			`{"id": 1, "original": true, "save_path": %q}`,
@@ -131,6 +131,35 @@ func TestDownloadDocument_Execute_Original(t *testing.T) {
 	)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	checks := []string{
+		"Document downloaded successfully",
+		savePath,
+		"application/pdf",
+	}
+
+	for _, check := range checks {
+		if !strings.Contains(result, check) {
+			t.Errorf(
+				"Output missing %q.\nGot:\n%s",
+				check,
+				result,
+			)
+		}
+	}
+
+	content, err := os.ReadFile(savePath)
+	if err != nil {
+		t.Fatalf("Failed to read downloaded file: %v", err)
+	}
+
+	if string(content) != "original content" {
+		t.Errorf(
+			"File content = %q, want %q",
+			string(content),
+			"original content",
+		)
 	}
 }
 

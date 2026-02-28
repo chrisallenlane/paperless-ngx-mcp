@@ -184,6 +184,56 @@ func TestListDocumentNotes_InvalidID(t *testing.T) {
 	}
 }
 
+func TestListDocumentNotes_Pagination(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(
+				w http.ResponseWriter,
+				r *http.Request,
+			) {
+				q := r.URL.Query()
+				if got := q.Get("page"); got != "2" {
+					t.Errorf(
+						"Expected page=2, got %s",
+						got,
+					)
+				}
+				if got := q.Get("page_size"); got != "5" {
+					t.Errorf(
+						"Expected page_size=5, got %s",
+						got,
+					)
+				}
+
+				w.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(emptyNoteListResponse))
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewListDocumentNotes(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(
+			`{"id": 42, "page": 2, "page_size": 5}`,
+		),
+	)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+}
+
 // --- CreateDocumentNote tests ---
 
 func TestCreateDocumentNote_Execute(t *testing.T) {

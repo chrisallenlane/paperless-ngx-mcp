@@ -196,6 +196,76 @@ func TestUploadDocument_Execute_WithOptionalFields(t *testing.T) {
 	}
 }
 
+func TestUploadDocument_Execute_WithStoragePathAndASNAndCreated(t *testing.T) {
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "contract.pdf")
+	if err := os.WriteFile(
+		testFile,
+		[]byte("pdf content"),
+		0o644,
+	); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseMultipartForm(
+					32 << 20,
+				); err != nil {
+					t.Fatalf(
+						"Failed to parse multipart: %v",
+						err,
+					)
+				}
+
+				if r.FormValue("storage_path") != "5" {
+					t.Errorf(
+						"storage_path = %s, want 5",
+						r.FormValue("storage_path"),
+					)
+				}
+
+				if r.FormValue("archive_serial_number") != "42" {
+					t.Errorf(
+						"archive_serial_number = %s, want 42",
+						r.FormValue("archive_serial_number"),
+					)
+				}
+
+				if r.FormValue("created") != "2024-01-15" {
+					t.Errorf(
+						"created = %s, want 2024-01-15",
+						r.FormValue("created"),
+					)
+				}
+
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`"task-789"`))
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewUploadDocument(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(fmt.Sprintf(
+			`{"file_path": %q, "storage_path": 5, "archive_serial_number": 42, "created": "2024-01-15"}`,
+			testFile,
+		)),
+	)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+}
+
 func TestUploadDocument_Execute_MissingFilePath(t *testing.T) {
 	c := client.New("http://localhost", "test-token")
 	tool := NewUploadDocument(c)
@@ -249,6 +319,13 @@ func TestUploadDocument_Execute_TraversalPath(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error for traversal path")
 	}
+
+	if !strings.Contains(err.Error(), "must not contain") {
+		t.Errorf(
+			"Error should mention traversal, got: %s",
+			err.Error(),
+		)
+	}
 }
 
 func TestUploadDocument_Execute_NonexistentFile(t *testing.T) {
@@ -283,7 +360,7 @@ func TestUploadDocument_Execute_Directory(t *testing.T) {
 		t.Fatal("Expected error for directory path")
 	}
 
-	if !strings.Contains(err.Error(), "not a directory") {
+	if !strings.Contains(err.Error(), "must be a file") {
 		t.Errorf(
 			"Error should mention directory, got: %s",
 			err.Error(),

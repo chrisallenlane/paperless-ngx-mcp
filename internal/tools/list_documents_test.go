@@ -235,7 +235,7 @@ func TestListDocuments_Execute_WithFilters(t *testing.T) {
 	)
 	tool := NewListDocuments(c)
 
-	_, err := tool.Execute(
+	result, err := tool.Execute(
 		context.Background(),
 		json.RawMessage(
 			`{"correspondent": 1, "document_type": 2, "tags": [1, 3]}`,
@@ -243,6 +243,64 @@ func TestListDocuments_Execute_WithFilters(t *testing.T) {
 	)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if result != "No documents found." {
+		t.Errorf(
+			"Expected empty message, got: %s",
+			result,
+		)
+	}
+}
+
+func TestListDocuments_Execute_WithIsInInbox(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Query().Get("is_in_inbox") != "true" {
+					t.Errorf(
+						"Expected is_in_inbox=true, got %s",
+						r.URL.RawQuery,
+					)
+				}
+
+				w.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{
+					"count": 0,
+					"next": null,
+					"previous": null,
+					"all": [],
+					"results": []
+				}`))
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewListDocuments(c)
+
+	result, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(`{"is_in_inbox": true}`),
+	)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if result != "No documents found." {
+		t.Errorf(
+			"Expected empty message, got: %s",
+			result,
+		)
 	}
 }
 

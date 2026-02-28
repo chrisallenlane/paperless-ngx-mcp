@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"strings"
@@ -176,11 +177,8 @@ func TestHandleCallTool_InvalidTool(t *testing.T) {
 		t.Fatal("Expected error for nonexistent tool")
 	}
 
-	if !strings.Contains(resp.Error.Message, "tool not found") {
-		t.Errorf(
-			"Error message should mention 'tool not found', got: %s",
-			resp.Error.Message,
-		)
+	if resp.Error.Code != -32603 {
+		t.Errorf("Error code = %d, want -32603", resp.Error.Code)
 	}
 }
 
@@ -199,6 +197,10 @@ func TestHandleCallTool_MalformedParams(t *testing.T) {
 
 	if resp.Error == nil {
 		t.Fatal("Expected error for malformed params")
+	}
+
+	if resp.Error.Code != -32603 {
+		t.Errorf("Error code = %d, want -32603", resp.Error.Code)
 	}
 
 	if !strings.Contains(
@@ -227,6 +229,126 @@ func TestJSONRPCRequest_Unmarshal(t *testing.T) {
 
 	if req.Method != "initialize" {
 		t.Errorf("Method = %s, want initialize", req.Method)
+	}
+}
+
+// runServer is a helper that writes lines to a server's stdin, runs the server,
+// and returns the decoded responses from stdout.
+func runServer(
+	t *testing.T,
+	lines []string,
+) []map[string]interface{} {
+	t.Helper()
+
+	c := client.New("http://localhost", "test-token")
+	s := New(c)
+
+	var stdin bytes.Buffer
+	for _, line := range lines {
+		stdin.WriteString(line + "\n")
+	}
+
+	var stdout bytes.Buffer
+	if err := s.Run(context.Background(), &stdin, &stdout); err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+
+	// Decode one JSON object per output line.
+	var responses []map[string]interface{}
+	decoder := json.NewDecoder(&stdout)
+	for decoder.More() {
+		var resp map[string]interface{}
+		if err := decoder.Decode(&resp); err != nil {
+			t.Fatalf("Failed to decode response: %v", err)
+		}
+		responses = append(responses, resp)
+	}
+
+	return responses
+}
+
+func TestRun_WellFormedRequest(t *testing.T) {
+	line := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`
+	responses := runServer(t, []string{line})
+
+	if len(responses) != 1 {
+		t.Fatalf("Expected 1 response, got %d", len(responses))
+	}
+
+	resp := responses[0]
+
+	if resp["jsonrpc"] != "2.0" {
+		t.Errorf("jsonrpc = %v, want 2.0", resp["jsonrpc"])
+	}
+
+	// id is decoded as float64 from JSON.
+	if resp["id"].(float64) != 1 {
+		t.Errorf("id = %v, want 1", resp["id"])
+	}
+
+	if resp["error"] != nil {
+		t.Errorf("Unexpected error: %v", resp["error"])
+	}
+
+	if resp["result"] == nil {
+		t.Error("Result should not be nil")
+	}
+}
+
+func TestRun_MalformedJSON(t *testing.T) {
+	line := `{not valid json`
+	responses := runServer(t, []string{line})
+
+	if len(responses) != 1 {
+		t.Fatalf("Expected 1 response, got %d", len(responses))
+	}
+
+	resp := responses[0]
+
+	errObj, ok := resp["error"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Expected an error object in response")
+	}
+
+	if errObj["code"].(float64) != -32700 {
+		t.Errorf("Error code = %v, want -32700", errObj["code"])
+	}
+}
+
+func TestRun_MultipleRequests(t *testing.T) {
+	lines := []string{
+		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/list"}`,
+	}
+	responses := runServer(t, lines)
+
+	if len(responses) != 2 {
+		t.Fatalf("Expected 2 responses, got %d", len(responses))
+	}
+
+	for i, resp := range responses {
+		if resp["jsonrpc"] != "2.0" {
+			t.Errorf(
+				"response[%d] jsonrpc = %v, want 2.0",
+				i,
+				resp["jsonrpc"],
+			)
+		}
+		if resp["error"] != nil {
+			t.Errorf("response[%d] unexpected error: %v", i, resp["error"])
+		}
+		if resp["result"] == nil {
+			t.Errorf("response[%d] result should not be nil", i)
+		}
+	}
+
+	// Verify IDs match their respective requests.
+	if responses[0]["id"].(float64) != 1 {
+		t.Errorf("response[0] id = %v, want 1", responses[0]["id"])
+	}
+
+	if responses[1]["id"].(float64) != 2 {
+		t.Errorf("response[1] id = %v, want 2", responses[1]["id"])
 	}
 }
 
