@@ -500,3 +500,152 @@ func TestDeleteDocumentNote_InvalidNoteID(t *testing.T) {
 		)
 	}
 }
+
+// --- HTTP error path tests (Gap 4) ---
+
+func TestCreateDocumentNote_HTTPError(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(
+				w http.ResponseWriter,
+				_ *http.Request,
+			) {
+				w.WriteHeader(http.StatusInternalServerError)
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewCreateDocumentNote(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(
+			`{"id": 42, "note": "Test note"}`,
+		),
+	)
+	if err == nil {
+		t.Fatal("Expected error for HTTP 500 response")
+	}
+
+	if !strings.Contains(err.Error(), "failed to create note") {
+		t.Errorf(
+			"Error should mention failed to create note, got: %s",
+			err.Error(),
+		)
+	}
+}
+
+func TestDeleteDocumentNote_HTTPError(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(
+				w http.ResponseWriter,
+				_ *http.Request,
+			) {
+				w.WriteHeader(http.StatusNotFound)
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewDeleteDocumentNote(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(
+			`{"document_id": 42, "note_id": 7}`,
+		),
+	)
+	if err == nil {
+		t.Fatal("Expected error for HTTP 404 response")
+	}
+
+	if !strings.Contains(err.Error(), "failed to delete note") {
+		t.Errorf(
+			"Error should mention failed to delete note, got: %s",
+			err.Error(),
+		)
+	}
+}
+
+// --- Malformed JSON input tests (Gap 10) ---
+
+func TestCreateDocumentNote_MalformedJSON(t *testing.T) {
+	c := client.New("http://localhost", "test-token")
+	tool := NewCreateDocumentNote(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage("not json"),
+	)
+	if err == nil {
+		t.Fatal("Expected error for malformed JSON input")
+	}
+
+	if !strings.Contains(
+		err.Error(),
+		"failed to parse arguments",
+	) {
+		t.Errorf(
+			"Error should mention failed to parse arguments, got: %s",
+			err.Error(),
+		)
+	}
+}
+
+func TestDeleteDocumentNote_MalformedJSON(t *testing.T) {
+	c := client.New("http://localhost", "test-token")
+	tool := NewDeleteDocumentNote(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage("not json"),
+	)
+	if err == nil {
+		t.Fatal("Expected error for malformed JSON input")
+	}
+
+	if !strings.Contains(
+		err.Error(),
+		"failed to parse arguments",
+	) {
+		t.Errorf(
+			"Error should mention failed to parse arguments, got: %s",
+			err.Error(),
+		)
+	}
+}
+
+func TestListDocumentNotes_MalformedJSON(t *testing.T) {
+	c := client.New("http://localhost", "test-token")
+	tool := NewListDocumentNotes(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage("not json"),
+	)
+	if err == nil {
+		t.Fatal("Expected error for malformed JSON input")
+	}
+
+	if !strings.Contains(
+		err.Error(),
+		"failed to parse arguments",
+	) {
+		t.Errorf(
+			"Error should mention failed to parse arguments, got: %s",
+			err.Error(),
+		)
+	}
+}

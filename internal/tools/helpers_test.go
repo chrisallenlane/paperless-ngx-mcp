@@ -108,6 +108,22 @@ func TestBuildListPath_NoParams(t *testing.T) {
 	}
 }
 
+func TestBuildListPath_InvalidJSON(t *testing.T) {
+	args := json.RawMessage("not json")
+
+	_, err := buildListPath("/api/test/", args)
+	if err == nil {
+		t.Fatal("Expected error for invalid JSON, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "failed to parse arguments") {
+		t.Errorf(
+			"Error = %q, want error containing \"failed to parse arguments\"",
+			err.Error(),
+		)
+	}
+}
+
 func TestValidateFilePath(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -243,6 +259,7 @@ func TestParsePatchArgs(t *testing.T) {
 		wantBodyKeys []string
 		wantIDInBody bool
 		wantErr      bool
+		wantErrMsg   string
 	}{
 		{
 			name: "id and extra fields",
@@ -274,6 +291,17 @@ func TestParsePatchArgs(t *testing.T) {
 			args:    json.RawMessage(`{"id": -1, "name": "foo"}`),
 			wantErr: true,
 		},
+		{
+			name:    "totally invalid JSON returns error",
+			args:    json.RawMessage("not json"),
+			wantErr: true,
+		},
+		{
+			name:       "id as string returns error mentioning failed to parse id",
+			args:       json.RawMessage(`{"id": "abc"}`),
+			wantErr:    true,
+			wantErrMsg: "failed to parse id",
+		},
 	}
 
 	for _, tt := range tests {
@@ -290,6 +318,17 @@ func TestParsePatchArgs(t *testing.T) {
 			}
 
 			if tt.wantErr {
+				if tt.wantErrMsg != "" && !strings.Contains(
+					err.Error(),
+					tt.wantErrMsg,
+				) {
+					t.Errorf(
+						"parsePatchArgs(%s) error = %q, want error containing %q",
+						tt.args,
+						err.Error(),
+						tt.wantErrMsg,
+					)
+				}
 				return
 			}
 
@@ -320,5 +359,37 @@ func TestParsePatchArgs(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// errReader is an io.ReadCloser whose Read always returns an error.
+type errReader struct {
+	err error
+}
+
+func (e *errReader) Read(_ []byte) (int, error) {
+	return 0, e.err
+}
+
+func (e *errReader) Close() error {
+	return nil
+}
+
+func TestReadResponse_BodyReadError(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       &errReader{err: io.ErrUnexpectedEOF},
+	}
+
+	_, err := readResponse(resp, http.StatusOK)
+	if err == nil {
+		t.Fatal("Expected error when body read fails, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "failed to read response") {
+		t.Errorf(
+			"Error = %q, want error containing \"failed to read response\"",
+			err.Error(),
+		)
 	}
 }

@@ -15,12 +15,13 @@ import (
 
 // toolTestEntry defines a tool for shared cross-cutting tests.
 type toolTestEntry struct {
-	name          string
-	newTool       func(*client.Client) Tool
-	serverArgs    string   // JSON args for ServerError test; "" to skip
-	idArgsFmt     string   // fmt template for InvalidID/NegativeID; "" to skip
-	missingIDArgs string   // JSON args that omit id, for MissingID test; "" to skip
-	required      []string // expected required schema fields; nil to skip
+	name           string
+	newTool        func(*client.Client) Tool
+	serverArgs     string   // JSON args for ServerError test; "" to skip
+	idArgsFmt      string   // fmt template for InvalidID/NegativeID; "" to skip
+	missingIDArgs  string   // JSON args that omit id, for MissingID test; "" to skip
+	required       []string // expected required schema fields; nil to skip
+	expectedStatus int      // expected HTTP status for MalformedResponse test; 0 to skip
 }
 
 // allToolTests covers every tool.
@@ -31,28 +32,32 @@ var allToolTests = []toolTestEntry{
 		newTool: func(c *client.Client) Tool {
 			return NewGetStatus(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetConfig",
 		newTool: func(c *client.Client) Tool {
 			return NewGetConfig(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetNextASN",
 		newTool: func(c *client.Client) Tool {
 			return NewGetNextASN(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetStatistics",
 		newTool: func(c *client.Client) Tool {
 			return NewGetStatistics(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 
 	// Get (ID-based) tools
@@ -61,90 +66,100 @@ var allToolTests = []toolTestEntry{
 		newTool: func(c *client.Client) Tool {
 			return NewGetSavedView(c)
 		},
-		serverArgs: `{"id": 1}`,
-		idArgsFmt:  `{"id": %d}`,
-		required:   []string{"id"},
+		serverArgs:     `{"id": 1}`,
+		idArgsFmt:      `{"id": %d}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetTag",
 		newTool: func(c *client.Client) Tool {
 			return NewGetTag(c)
 		},
-		serverArgs: `{"id": 1}`,
-		idArgsFmt:  `{"id": %d}`,
-		required:   []string{"id"},
+		serverArgs:     `{"id": 1}`,
+		idArgsFmt:      `{"id": %d}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetStoragePath",
 		newTool: func(c *client.Client) Tool {
 			return NewGetStoragePath(c)
 		},
-		serverArgs: `{"id": 1}`,
-		idArgsFmt:  `{"id": %d}`,
-		required:   []string{"id"},
+		serverArgs:     `{"id": 1}`,
+		idArgsFmt:      `{"id": %d}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetTask",
 		newTool: func(c *client.Client) Tool {
 			return NewGetTask(c)
 		},
-		serverArgs: `{"id": 1}`,
-		idArgsFmt:  `{"id": %d}`,
-		required:   []string{"id"},
+		serverArgs:     `{"id": 1}`,
+		idArgsFmt:      `{"id": %d}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetCorrespondent",
 		newTool: func(c *client.Client) Tool {
 			return NewGetCorrespondent(c)
 		},
-		serverArgs: `{"id": 1}`,
-		idArgsFmt:  `{"id": %d}`,
-		required:   []string{"id"},
+		serverArgs:     `{"id": 1}`,
+		idArgsFmt:      `{"id": %d}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetCustomField",
 		newTool: func(c *client.Client) Tool {
 			return NewGetCustomField(c)
 		},
-		serverArgs: `{"id": 1}`,
-		idArgsFmt:  `{"id": %d}`,
-		required:   []string{"id"},
+		serverArgs:     `{"id": 1}`,
+		idArgsFmt:      `{"id": %d}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetDocumentType",
 		newTool: func(c *client.Client) Tool {
 			return NewGetDocumentType(c)
 		},
-		serverArgs: `{"id": 1}`,
-		idArgsFmt:  `{"id": %d}`,
-		required:   []string{"id"},
+		serverArgs:     `{"id": 1}`,
+		idArgsFmt:      `{"id": %d}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetDocument",
 		newTool: func(c *client.Client) Tool {
 			return NewGetDocument(c)
 		},
-		serverArgs: `{"id": 1}`,
-		idArgsFmt:  `{"id": %d}`,
-		required:   []string{"id"},
+		serverArgs:     `{"id": 1}`,
+		idArgsFmt:      `{"id": %d}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetDocumentMetadata",
 		newTool: func(c *client.Client) Tool {
 			return NewGetDocumentMetadata(c)
 		},
-		serverArgs: `{"id": 1}`,
-		idArgsFmt:  `{"id": %d}`,
-		required:   []string{"id"},
+		serverArgs:     `{"id": 1}`,
+		idArgsFmt:      `{"id": %d}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "GetDocumentSuggestions",
 		newTool: func(c *client.Client) Tool {
 			return NewGetDocumentSuggestions(c)
 		},
-		serverArgs: `{"id": 1}`,
-		idArgsFmt:  `{"id": %d}`,
-		required:   []string{"id"},
+		serverArgs:     `{"id": 1}`,
+		idArgsFmt:      `{"id": %d}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 
 	// List tools
@@ -153,63 +168,72 @@ var allToolTests = []toolTestEntry{
 		newTool: func(c *client.Client) Tool {
 			return NewListCorrespondents(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "ListCustomFields",
 		newTool: func(c *client.Client) Tool {
 			return NewListCustomFields(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "ListDocumentTypes",
 		newTool: func(c *client.Client) Tool {
 			return NewListDocumentTypes(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "ListSavedViews",
 		newTool: func(c *client.Client) Tool {
 			return NewListSavedViews(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "ListTags",
 		newTool: func(c *client.Client) Tool {
 			return NewListTags(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "ListStoragePaths",
 		newTool: func(c *client.Client) Tool {
 			return NewListStoragePaths(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "ListDocuments",
 		newTool: func(c *client.Client) Tool {
 			return NewListDocuments(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "ListTrash",
 		newTool: func(c *client.Client) Tool {
 			return NewListTrash(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "ListTasks",
 		newTool: func(c *client.Client) Tool {
 			return NewListTasks(c)
 		},
-		serverArgs: `{}`,
+		serverArgs:     `{}`,
+		expectedStatus: http.StatusOK,
 	},
 
 	// Create tools
@@ -218,24 +242,27 @@ var allToolTests = []toolTestEntry{
 		newTool: func(c *client.Client) Tool {
 			return NewCreateCorrespondent(c)
 		},
-		serverArgs: `{"name": "Test"}`,
-		required:   []string{"name"},
+		serverArgs:     `{"name": "Test"}`,
+		required:       []string{"name"},
+		expectedStatus: http.StatusCreated,
 	},
 	{
 		name: "CreateCustomField",
 		newTool: func(c *client.Client) Tool {
 			return NewCreateCustomField(c)
 		},
-		serverArgs: `{"name": "Test", "data_type": "string"}`,
-		required:   []string{"name", "data_type"},
+		serverArgs:     `{"name": "Test", "data_type": "string"}`,
+		required:       []string{"name", "data_type"},
+		expectedStatus: http.StatusCreated,
 	},
 	{
 		name: "CreateDocumentType",
 		newTool: func(c *client.Client) Tool {
 			return NewCreateDocumentType(c)
 		},
-		serverArgs: `{"name": "Test"}`,
-		required:   []string{"name"},
+		serverArgs:     `{"name": "Test"}`,
+		required:       []string{"name"},
+		expectedStatus: http.StatusCreated,
 	},
 	{
 		name: "CreateSavedView",
@@ -249,22 +276,25 @@ var allToolTests = []toolTestEntry{
 			"show_in_sidebar",
 			"filter_rules",
 		},
+		expectedStatus: http.StatusCreated,
 	},
 	{
 		name: "CreateTag",
 		newTool: func(c *client.Client) Tool {
 			return NewCreateTag(c)
 		},
-		serverArgs: `{"name": "Test"}`,
-		required:   []string{"name"},
+		serverArgs:     `{"name": "Test"}`,
+		required:       []string{"name"},
+		expectedStatus: http.StatusCreated,
 	},
 	{
 		name: "CreateStoragePath",
 		newTool: func(c *client.Client) Tool {
 			return NewCreateStoragePath(c)
 		},
-		serverArgs: `{"name": "Test", "path": "/test/"}`,
-		required:   []string{"name", "path"},
+		serverArgs:     `{"name": "Test", "path": "/test/"}`,
+		required:       []string{"name", "path"},
+		expectedStatus: http.StatusCreated,
 	},
 
 	// Update tools
@@ -273,83 +303,94 @@ var allToolTests = []toolTestEntry{
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateCorrespondent(c)
 		},
-		serverArgs:    `{"id": 1, "name": "Test"}`,
-		idArgsFmt:     `{"id": %d}`,
-		missingIDArgs: `{"name": "Test"}`,
-		required:      []string{"id"},
+		serverArgs:     `{"id": 1, "name": "Test"}`,
+		idArgsFmt:      `{"id": %d}`,
+		missingIDArgs:  `{"name": "Test"}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "UpdateCustomField",
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateCustomField(c)
 		},
-		serverArgs:    `{"id": 1, "name": "Test"}`,
-		idArgsFmt:     `{"id": %d}`,
-		missingIDArgs: `{"name": "Test"}`,
-		required:      []string{"id"},
+		serverArgs:     `{"id": 1, "name": "Test"}`,
+		idArgsFmt:      `{"id": %d}`,
+		missingIDArgs:  `{"name": "Test"}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "UpdateDocumentType",
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateDocumentType(c)
 		},
-		serverArgs:    `{"id": 1, "name": "Test"}`,
-		idArgsFmt:     `{"id": %d}`,
-		missingIDArgs: `{"name": "Test"}`,
-		required:      []string{"id"},
+		serverArgs:     `{"id": 1, "name": "Test"}`,
+		idArgsFmt:      `{"id": %d}`,
+		missingIDArgs:  `{"name": "Test"}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "UpdateSavedView",
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateSavedView(c)
 		},
-		serverArgs:    `{"id": 1, "name": "Test"}`,
-		idArgsFmt:     `{"id": %d}`,
-		missingIDArgs: `{"name": "Test"}`,
-		required:      []string{"id"},
+		serverArgs:     `{"id": 1, "name": "Test"}`,
+		idArgsFmt:      `{"id": %d}`,
+		missingIDArgs:  `{"name": "Test"}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "UpdateTag",
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateTag(c)
 		},
-		serverArgs:    `{"id": 1, "name": "Test"}`,
-		idArgsFmt:     `{"id": %d}`,
-		missingIDArgs: `{"name": "Test"}`,
-		required:      []string{"id"},
+		serverArgs:     `{"id": 1, "name": "Test"}`,
+		idArgsFmt:      `{"id": %d}`,
+		missingIDArgs:  `{"name": "Test"}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "UpdateStoragePath",
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateStoragePath(c)
 		},
-		serverArgs:    `{"id": 1, "name": "Test"}`,
-		idArgsFmt:     `{"id": %d}`,
-		missingIDArgs: `{"name": "Test"}`,
-		required:      []string{"id"},
+		serverArgs:     `{"id": 1, "name": "Test"}`,
+		idArgsFmt:      `{"id": %d}`,
+		missingIDArgs:  `{"name": "Test"}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "UpdateDocument",
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateDocument(c)
 		},
-		serverArgs:    `{"id": 1, "title": "Test"}`,
-		idArgsFmt:     `{"id": %d}`,
-		missingIDArgs: `{"title": "Test"}`,
-		required:      []string{"id"},
+		serverArgs:     `{"id": 1, "title": "Test"}`,
+		idArgsFmt:      `{"id": %d}`,
+		missingIDArgs:  `{"title": "Test"}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "UpdateConfig",
 		newTool: func(c *client.Client) Tool {
 			return NewUpdateConfig(c)
 		},
-		serverArgs:    `{"id": 1, "deskew": true}`,
-		idArgsFmt:     `{"id": %d}`,
-		missingIDArgs: `{"output_type": "pdfa"}`,
-		required:      []string{"id"},
+		serverArgs:     `{"id": 1, "deskew": true}`,
+		idArgsFmt:      `{"id": %d}`,
+		missingIDArgs:  `{"output_type": "pdfa"}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 
-	// Delete tools
+	// Delete tools — expectedStatus is 0 (omitted) because deleteTool
+	// expects HTTP 204 with an empty body and performs no JSON
+	// unmarshaling, so there is nothing to exercise with a malformed
+	// response body.
 	{
 		name: "DeleteCorrespondent",
 		newTool: func(c *client.Client) Tool {
@@ -420,18 +461,20 @@ var allToolTests = []toolTestEntry{
 		newTool: func(c *client.Client) Tool {
 			return NewListDocumentNotes(c)
 		},
-		serverArgs: `{"id": 1}`,
-		idArgsFmt:  `{"id": %d}`,
-		required:   []string{"id"},
+		serverArgs:     `{"id": 1}`,
+		idArgsFmt:      `{"id": %d}`,
+		required:       []string{"id"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "CreateDocumentNote",
 		newTool: func(c *client.Client) Tool {
 			return NewCreateDocumentNote(c)
 		},
-		serverArgs: `{"id": 1, "note": "Test"}`,
-		idArgsFmt:  `{"id": %d, "note": "Test"}`,
-		required:   []string{"id", "note"},
+		serverArgs:     `{"id": 1, "note": "Test"}`,
+		idArgsFmt:      `{"id": %d, "note": "Test"}`,
+		required:       []string{"id", "note"},
+		expectedStatus: http.StatusOK,
 	},
 	{
 		name: "DeleteDocumentNote",
@@ -443,6 +486,7 @@ var allToolTests = []toolTestEntry{
 			"document_id",
 			"note_id",
 		},
+		expectedStatus: http.StatusOK,
 	},
 
 	// Special tools (Description + InputSchema only)
@@ -693,6 +737,62 @@ func TestAllTools_MissingID(t *testing.T) {
 				t.Errorf(
 					"Error should mention id is required, got: %s",
 					err.Error(),
+				)
+			}
+		})
+	}
+}
+
+// TestAllTools_MalformedResponse verifies that every tool which
+// unmarshals an HTTP response body returns a non-nil error when the
+// server replies with the expected success status code but an invalid
+// JSON body. This exercises the "failed to parse response" branch that
+// json.Unmarshal errors trigger inside fetchByID, patchByID,
+// listResources, noArgGetTool.Execute, createTool.Execute, and their
+// dedicated-file equivalents.
+//
+// Tools with expectedStatus == 0 are skipped. This currently covers:
+//   - deleteTool variants (HTTP 204, no response body to unmarshal)
+//   - UploadDocument (response body is a plain task-ID string, not JSON)
+//   - DownloadDocument (response body is streamed to a file, not parsed)
+func TestAllTools_MalformedResponse(t *testing.T) {
+	for _, tt := range allToolTests {
+		if tt.expectedStatus == 0 {
+			continue
+		}
+
+		tt := tt // capture for parallel sub-tests
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(
+				http.HandlerFunc(
+					func(
+						w http.ResponseWriter,
+						_ *http.Request,
+					) {
+						w.WriteHeader(tt.expectedStatus)
+						io.WriteString(
+							w,
+							"not valid json",
+						)
+					},
+				),
+			)
+			defer server.Close()
+
+			c := client.NewWithHTTPClient(
+				server.URL,
+				"test-token",
+				server.Client(),
+			)
+			tool := tt.newTool(c)
+
+			_, err := tool.Execute(
+				context.Background(),
+				json.RawMessage(tt.serverArgs),
+			)
+			if err == nil {
+				t.Fatal(
+					"Expected error for malformed response body",
 				)
 			}
 		})

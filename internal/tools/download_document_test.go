@@ -250,6 +250,115 @@ func TestDownloadDocument_Execute_NonexistentDir(t *testing.T) {
 	}
 }
 
+func TestDownloadDocument_Execute_MalformedJSON(t *testing.T) {
+	c := client.New("http://localhost", "test-token")
+	tool := NewDownloadDocument(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage("not json"),
+	)
+	if err == nil {
+		t.Fatal("Expected error for malformed JSON input")
+	}
+
+	if !strings.Contains(err.Error(), "failed to parse arguments") {
+		t.Errorf(
+			"Error should mention parsing arguments, got: %s",
+			err.Error(),
+		)
+	}
+}
+
+func TestDownloadDocument_Execute_FileCreationFailure(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Use the temp dir itself as save_path — it is a directory, not a
+	// file, so os.Create will fail.
+	savePath := tmpDir
+
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/pdf")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte("fake pdf content"))
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewDownloadDocument(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(fmt.Sprintf(
+			`{"id": 1, "save_path": %q}`,
+			savePath,
+		)),
+	)
+	if err == nil {
+		t.Fatal("Expected error when save_path is a directory")
+	}
+
+	if !strings.Contains(err.Error(), "failed to create output file") {
+		t.Errorf(
+			"Error should mention failed to create output file, got: %s",
+			err.Error(),
+		)
+	}
+}
+
+func TestDownloadDocument_Execute_NoContentType(t *testing.T) {
+	tmpDir := t.TempDir()
+	savePath := filepath.Join(tmpDir, "downloaded.bin")
+
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, _ *http.Request) {
+				// Suppress Go's automatic content-type sniffing by
+				// setting the header to an empty slice before writing.
+				// An absent Content-Type triggers the "unknown" fallback
+				// in the tool.
+				w.Header()["Content-Type"] = []string{}
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte("some binary content"))
+			},
+		),
+	)
+	defer server.Close()
+
+	c := client.NewWithHTTPClient(
+		server.URL,
+		"test-token",
+		server.Client(),
+	)
+	tool := NewDownloadDocument(c)
+
+	result, err := tool.Execute(
+		context.Background(),
+		json.RawMessage(fmt.Sprintf(
+			`{"id": 1, "save_path": %q}`,
+			savePath,
+		)),
+	)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if !strings.Contains(result, "unknown") {
+		t.Errorf(
+			"Result should contain \"unknown\" for missing Content-Type, got:\n%s",
+			result,
+		)
+	}
+}
+
 func TestDownloadDocument_Execute_ServerError(t *testing.T) {
 	tmpDir := t.TempDir()
 	savePath := filepath.Join(tmpDir, "test.pdf")

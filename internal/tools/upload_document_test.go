@@ -368,6 +368,26 @@ func TestUploadDocument_Execute_Directory(t *testing.T) {
 	}
 }
 
+func TestUploadDocument_Execute_MalformedJSON(t *testing.T) {
+	c := client.New("http://localhost", "test-token")
+	tool := NewUploadDocument(c)
+
+	_, err := tool.Execute(
+		context.Background(),
+		json.RawMessage("not json"),
+	)
+	if err == nil {
+		t.Fatal("Expected error for malformed JSON input")
+	}
+
+	if !strings.Contains(err.Error(), "failed to parse arguments") {
+		t.Errorf(
+			"Error should mention parsing arguments, got: %s",
+			err.Error(),
+		)
+	}
+}
+
 func TestUploadDocument_Execute_ServerError(t *testing.T) {
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.pdf")

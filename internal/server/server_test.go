@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -389,5 +392,179 @@ func TestJSONRPCError_Marshal(t *testing.T) {
 			"error message = %v, want Invalid Request",
 			errorObj["message"],
 		)
+	}
+}
+
+// statusJSON is a minimal valid SystemStatus JSON response used by
+// handleCallTool tests.
+const statusJSON = `{
+	"pngx_version": "2.0.0",
+	"server_os": "linux",
+	"install_type": "bare-metal",
+	"storage": {"total": 1073741824, "available": 536870912},
+	"database": {
+		"type": "sqlite",
+		"url": "",
+		"status": "OK",
+		"error": null,
+		"migration_status": {
+			"latest_migration": "0001_initial",
+			"unapplied_migrations": []
+		}
+	},
+	"tasks": {
+		"redis_url": "redis://localhost",
+		"redis_status": "OK",
+		"redis_error": null,
+		"celery_status": "OK",
+		"celery_url": null,
+		"celery_error": null,
+		"index_status": "OK",
+		"index_last_modified": null,
+		"index_error": null,
+		"classifier_status": "OK",
+		"classifier_last_trained": null,
+		"classifier_error": null,
+		"sanity_check_status": "OK",
+		"sanity_check_last_run": null,
+		"sanity_check_error": null
+	}
+}`
+
+// newServerWithBackend builds a Server whose HTTP client points at the
+// provided httptest.Server.
+func newServerWithBackend(ts *httptest.Server) *Server {
+	c := client.NewWithHTTPClient(ts.URL, "test-token", ts.Client())
+	return New(c)
+}
+
+func TestHandleCallTool_Success(t *testing.T) {
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, statusJSON)
+		}),
+	)
+	defer ts.Close()
+
+	s := newServerWithBackend(ts)
+
+	params := map[string]interface{}{
+		"name":      "get_status",
+		"arguments": json.RawMessage(`{}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+
+	req := &JSONRPCRequest{
+		JSONRPC: "2.0",
+		ID:      10,
+		Method:  "tools/call",
+		Params:  paramsJSON,
+	}
+
+	resp := s.handleRequest(context.Background(), req)
+
+	if resp.Error != nil {
+		t.Fatalf("Unexpected error: %+v", resp.Error)
+	}
+
+	if resp.Result == nil {
+		t.Fatal("Result should not be nil")
+	}
+
+	result, ok := resp.Result.(map[string]interface{})
+	if !ok {
+		t.Fatal("Result should be a map")
+	}
+
+	content, ok := result["content"].([]map[string]interface{})
+	if !ok {
+		t.Fatal("content should be a slice of maps")
+	}
+
+	if len(content) == 0 {
+		t.Fatal("content should contain at least one item")
+	}
+
+	text, ok := content[0]["text"].(string)
+	if !ok {
+		t.Fatal("content[0].text should be a string")
+	}
+
+	if !strings.Contains(text, "Paperless-NGX Status") {
+		t.Errorf(
+			"content[0].text should contain status output, got: %s",
+			text,
+		)
+	}
+}
+
+func TestHandleCallTool_ToolExecutionError(t *testing.T) {
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+		}),
+	)
+	defer ts.Close()
+
+	s := newServerWithBackend(ts)
+
+	params := map[string]interface{}{
+		"name":      "get_status",
+		"arguments": json.RawMessage(`{}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+
+	req := &JSONRPCRequest{
+		JSONRPC: "2.0",
+		ID:      11,
+		Method:  "tools/call",
+		Params:  paramsJSON,
+	}
+
+	resp := s.handleRequest(context.Background(), req)
+
+	if resp.Error == nil {
+		t.Fatal("Expected error when backend returns 500")
+	}
+
+	if resp.Error.Code != -32603 {
+		t.Errorf("Error code = %d, want -32603", resp.Error.Code)
+	}
+
+	if !strings.Contains(resp.Error.Message, "tool execution failed:") {
+		t.Errorf(
+			"Error message should contain 'tool execution failed:', got: %s",
+			resp.Error.Message,
+		)
+	}
+}
+
+// failWriter always returns an error on Write, simulating a broken stdout.
+type failWriter struct{}
+
+func (failWriter) Write(_ []byte) (int, error) {
+	return 0, fmt.Errorf("simulated write failure")
+}
+
+func TestRun_StdoutWriteFailure(t *testing.T) {
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, statusJSON)
+		}),
+	)
+	defer ts.Close()
+
+	s := newServerWithBackend(ts)
+
+	line := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}` + "\n"
+	stdin := strings.NewReader(line)
+
+	err := s.Run(context.Background(), stdin, failWriter{})
+	if err == nil {
+		t.Fatal("Expected Run to return an error when stdout write fails")
 	}
 }

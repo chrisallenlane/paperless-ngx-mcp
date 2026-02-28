@@ -8,6 +8,10 @@ import (
 	"testing"
 )
 
+// unmarshalable is a value that cannot be serialized to JSON because it
+// contains a function field, which json.Marshal rejects.
+var unmarshalable = map[string]interface{}{"fn": func() {}}
+
 func TestNew(t *testing.T) {
 	c := New("https://api.example.com", "my-token")
 
@@ -246,5 +250,122 @@ func TestPostMultipart(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected 200, got %d", resp.StatusCode)
+	}
+}
+
+// TestTransportErrors verifies that Get, Post, Patch, and Delete each
+// return an error when the HTTP client cannot reach the server at all
+// (transport-level failure, no response).
+func TestTransportErrors(t *testing.T) {
+	// Port 1 on loopback is reserved and will refuse connections
+	// reliably without requiring an open port.
+	c := New("http://127.0.0.1:1", "token")
+
+	tests := []struct {
+		name string
+		call func() (*http.Response, error)
+	}{
+		{
+			name: "Get",
+			call: func() (*http.Response, error) {
+				return c.Get(context.Background(), "/api/test/")
+			},
+		},
+		{
+			name: "Post",
+			call: func() (*http.Response, error) {
+				return c.Post(
+					context.Background(),
+					"/api/test/",
+					map[string]string{"key": "value"},
+				)
+			},
+		},
+		{
+			name: "Patch",
+			call: func() (*http.Response, error) {
+				return c.Patch(
+					context.Background(),
+					"/api/test/1/",
+					map[string]string{"key": "value"},
+				)
+			},
+		},
+		{
+			name: "Delete",
+			call: func() (*http.Response, error) {
+				return c.Delete(context.Background(), "/api/test/1/")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := tt.call()
+			if err == nil {
+				resp.Body.Close()
+				t.Errorf("%s: expected transport error, got nil", tt.name)
+			}
+		})
+	}
+}
+
+// TestMarshalErrors verifies that Post and Patch return an error containing
+// "failed to marshal request body" when given a body that cannot be
+// serialized to JSON (e.g., a map containing a function value).
+func TestMarshalErrors(t *testing.T) {
+	// The server URL is irrelevant; json.Marshal runs before any
+	// network call is made, so we never actually connect.
+	c := New("http://127.0.0.1:1", "token")
+
+	tests := []struct {
+		name string
+		call func() (*http.Response, error)
+	}{
+		{
+			name: "Post",
+			call: func() (*http.Response, error) {
+				return c.Post(
+					context.Background(),
+					"/api/test/",
+					unmarshalable,
+				)
+			},
+		},
+		{
+			name: "Patch",
+			call: func() (*http.Response, error) {
+				return c.Patch(
+					context.Background(),
+					"/api/test/1/",
+					unmarshalable,
+				)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := tt.call()
+			if err == nil {
+				resp.Body.Close()
+				t.Fatalf(
+					"%s: expected marshal error, got nil",
+					tt.name,
+				)
+			}
+
+			if !strings.Contains(
+				err.Error(),
+				"failed to marshal request body",
+			) {
+				t.Errorf(
+					"%s: expected error containing %q, got %q",
+					tt.name,
+					"failed to marshal request body",
+					err.Error(),
+				)
+			}
+		})
 	}
 }
