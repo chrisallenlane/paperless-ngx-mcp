@@ -111,7 +111,10 @@ the MCP server:
 - **documents/preview / documents/thumb** -- Return rendered page images. MCP
   clients cannot meaningfully display binary image data.
 - **documents/history** -- Audit log. Niche admin use case.
-- **documents/email** -- Deprecated endpoint.
+- **documents/email** -- Deprecated bulk email ingestion endpoint.
+- **documents/{id}/email** -- Sends a document via outbound email. An AI
+  assistant sending emails on behalf of the user is a trust and safety
+  concern.
 - **documents/selection_data** -- Internal UI helper for bulk selection
   widgets. No conversational use case.
 - **documents/share_links** (per-document) -- Same security concern as the
