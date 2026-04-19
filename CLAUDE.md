@@ -796,7 +796,7 @@ Zero external dependencies for production code - uses only Go standard library.
 ## Version Information
 
 - MCP Protocol Version: `2024-11-05`
-- Server Version: `0.1.0`
+- Server Version: `0.1.1`
 - Go Version: 1.21+ required
 
 ## Resources

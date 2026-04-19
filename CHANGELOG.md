@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.1
+
+### Fixed
+- **JSON-RPC notification handling**: The server no longer responds to notifications (JSON-RPC 2.0 requests without an `id`). Previously it returned a "Method not found" error for `notifications/initialized`, which caused strict MCP clients (including current Claude Code) to abort the handshake and expose zero tools.
+
 ## v0.1.0
 
 Initial release.
